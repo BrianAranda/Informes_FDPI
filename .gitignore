@@ -1,0 +1,29 @@
+# Archivos de compilación
+build/
+
+# Salida de compilación (se regenera)
+*.synctex.gz
+main.pdf
+
+# Auxiliares de LaTeX (por si se compila sin build/)
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.lof
+*.log
+*.lot
+*.toc
+*.out
+
+# Bibliografía con biber y glosarios (por si se compila sin latexmk)
+*.bcf
+*.run.xml
+*.glo
+*.gls
+*.glg
+*.acn
+*.acr
+*.alg
+*.ist

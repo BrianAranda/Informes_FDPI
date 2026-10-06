@@ -1,0 +1,110 @@
+% Margenes
+\geometry{
+  a4paper,
+  inner=2.5cm,
+  outer=2cm,
+  top=4cm,
+  bottom=3cm,
+  headheight=2cm,
+  headsep=0.75cm,
+  footskip=1.5cm
+}
+
+% Espaciado general del texto
+\setstretch{1.5}
+
+% Eliminar espaciado de enumerate e itemize
+\setlist[enumerate,itemize]{itemsep=0pt, topsep=0pt}
+
+% Para que todos los Figura xx y Tabla xx aparezcan en negrita
+\captionsetup[figure]{labelfont=bf}
+\captionsetup[table]{labelfont=bf}
+
+% Estilo para páginas de título (como \maketitle)
+\fancypagestyle{plain}{
+    \fancyhf{}
+    \renewcommand{\headrulewidth}{0pt}
+    \fancyfoot[L]{\textbf{Aranda - Dutra - Klopzstein - Wlodeck}}
+    \fancyfoot[R]{\textbf{Pág. N° \thepage}}
+}
+
+% Estilo general para el documento
+\pagestyle{fancy}
+    \fancyhf{}
+    \renewcommand{\headrulewidth}{0pt}
+    \fancyhead[R]{\leftmark}
+    \fancyfoot[L]{\textbf{Aranda - Dutra - Klopzstein - Wlodeck}} 
+    \fancyfoot[R]{\textbf{Pág. N° \thepage}} 
+
+% Texto parte de las longtable (tablas de varias páginas)
+\DeclareTblrTemplate{contfoot-text}{default}{Continua en la siguiente página $\cdots$}
+\DeclareTblrTemplate{conthead-text}{default}{(Continuación)}
+
+% Definición del espaciado de indice
+\setlength{\cftbeforetoctitleskip}{-10 pt}       % Espacio antes de indice general
+\setlength{\cftaftertoctitleskip}{15 pt}         % Espacio despues de indice general
+
+% Cambiar el tamaño de la palabra "Índice"
+\renewcommand{\cfttoctitlefont}{\Huge\bfseries} % Tamaño Huge y negrita
+
+% Usar el punto como separador decimal
+\decimalpoint
+
+\begin{comment}
+    \titleformat{nombre de la parte a modificar}
+        {Formato de la sección}    
+        {Número y separador}                             
+        {Separación entre numero y tituli}                  
+        {Código adicional}
+        [Otra configuración, por ejemplo línea]
+\end{comment}
+
+% Redefinición del formato de \chapter
+\titleformat{\chapter}[hang]
+    {\normalfont\huge\bfseries} % sin \centering → alineado a la izquierda
+    {\thechapter.}              % número con punto
+    {0.25 cm}
+    {\MakeUppercase}
+    \titlespacing*{\chapter}{0 pt}{-45 pt}{15 pt} % {izq}{antes}{después}
+
+% Redefinición del formato de \section
+\titleformat{\section}[block]
+    {\normalfont\Large\bfseries}    
+    {}                    
+    {0 cm}                         
+    {\MakeUppercase}                
+    [\vspace{0.5ex}\titlerule]       
+
+% Redefinición del formato de \subsection
+\titleformat{\subsection}
+    {\normalfont\large\bfseries}    % Formato de la subsección
+    {}                              % Elimina el número
+    {0 pt}                          % Sangría
+    {}                              % Código adicional (opcional)
+
+% Redefinición del formato de \subsubsection
+\titleformat{\subsubsection}
+    {\normalfont\normalsize\bfseries}   % Formato de la subsubsección
+    {}                                  % Elimina el número
+    {0 pt}                              % Sangría
+    {}                                  % Código adicional (opcional)
+
+% Elimina la numeración del indice
+    
+    % Secciones
+    \renewcommand{\cftsecpresnum}{}         % Elimina el prefijo de numeración
+    \renewcommand{\cftsecaftersnum}{}       % Elimina el sufijo de numeración
+    \renewcommand{\cftsecnumwidth}{0 pt}    % Ancho de la numeración (0pt para eliminarla)
+    \renewcommand{\thesection}{}            % Elimina el número de sección en el índice
+    
+    % Subsecciones
+    \renewcommand{\cftsubsecpresnum}{}          % Elimina el prefijo de numeración
+    \renewcommand{\cftsubsecaftersnum}{}        % Elimina el sufijo de numeración
+    \renewcommand{\cftsubsecnumwidth}{0 pt}     % Ancho de la numeración (0pt para eliminarla)
+    \renewcommand{\thesubsection}{}             % Elimina el número de subsección en el índice
+    
+    % Subsubsecciones
+    \renewcommand{\cftsubsubsecpresnum}{}       % Elimina el prefijo de numeración
+    \renewcommand{\cftsubsubsecaftersnum}{}     % Elimina el sufijo de numeración
+    \renewcommand{\cftsubsubsecnumwidth}{0 pt}  % Ancho de la numeración (0pt para eliminarla)
+    \renewcommand{\thesubsubsection}{}          % Elimina el número de subsubsección en el índice
