@@ -5,4 +5,5 @@ Esta plantilla está hecha para desarrollar los trabajos prácticos correspondie
 * Para cada ejercicio, en caso de utilizar imágenes, crear una subcarpeta dentro de img/.
 * Para cada ejercicio, puede colocarse su Jupyter dentro de la carpeta code/ (ver code/README.md).
 * Siempre antes de comenzar a trabajar traer los cambios actuales con git pull.
+* Antes de entregar el trabajo final actualizar la fecha dentro de partes/titulo.
 
