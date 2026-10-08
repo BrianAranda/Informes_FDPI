@@ -1,30 +1,52 @@
 \section{Exploración de histogramas y espacios de color}
 
-    \subsection{Subsección}
+Exploración de histogramas y espacios de color:
+El histograma es una herramienta fundamental para entender la distribución tonal de una imagen. Sin embargo, para imágenes a color, la pregunta importante es "¿el histograma de qué?"
 
-        Desarrollar en subsecciones si quieren \dots
+Se analiza el procesamiento, \textbf{Figura \ref{fig:fig1}},  de la imagen elegida.
 
-    \subsection{Preguntas y análisis}
+\begin{figure}[H]
+\includegraphics[width=\textwidth]{./img/IMG_20251012_162045023_HDR_histogramas.png}
+\caption{Procesamiento de la imagen elegida.}
+\label{fig:fig1}
+\end{figure}
 
-        \begin{itemize}[leftmargin=*]
-            \item ¿Es equivalente el histograma de los canales por separado versus el de la imagen a escala de grises?
+Con base en los histogramas de los canales obtenidos del procesamiento de la imagen, se observa que los canales verde y rojo estan un poco más distribuidos hacia la derecha que el canal azul indicando que estos aportan a las zonas más brillantes de la imagen. Mientras que el azul, si bien tiene un pico en torno a los 140, presenta mucho aporte a los tonos más oscuros de la imagen hasta el punto de quemar los negros, se entiende que esto sucede debido a que la iluminación indirecta del cielo contribuye a que las sombras adapten tonos azules. Esto describe la composición de la imagen, la cual se trata de una fotografía de un arroyo en el monte.
 
-                Hay que responder aca \dots
+También se analizan los histogramas de las versiones a escala de grises, comparándolas se observa que son distintas, un resultado esperable dado que la composición de intensidad de cada imagen es distinta debido a que se calcula la escala de grises de diferente manera. Se aprecia que no se queman los negros como parece indicar el histograma del canal azul, sobre todo la versión de luminancia.
 
-            \item ¿Qué información revela el histograma de cada canal de color por separado sobre la composición cromática de la imagen?
+A modo de comparación, la \textbf{Figura \ref{fig:fig2}} presenta el procesamiento de otra imagen.
 
-                
+\begin{figure}[H]
+\includegraphics[width=\textwidth]{./img/IMG_20251009_175858684_HDR_histogramas.png}
+\caption{Procesamiento de la imagen elegida.}
+\label{fig:fig2}
+\end{figure}
 
-            \item Comparar los dos histogramas de escala de grises. ¿Son idénticos? Explicar por qué, basado en el concepto de luminancia perceptual (la sensibilidad del ojo humano a los colores verde, rojo y azul).
+En este caso, se observan que los picos de los canales estan más separados entre sí, indicando diferentes niveles de intensidad asociados a cada canal de color. Por ejemplo, la parte más brillante es el cielo (azul), intermedio unos árboles (verde), menos brillantes unas casas (rojo). Luego se tiene bajo sombra un techo que refleja el cielo (azul), árboles (verde) y partes de techos oxidados (rojo). Todo esto se relaciona directamente con los histogramas de los canales. De nuevo se observa que, según los histogramas de los canales individuales, los negros se queman, mientras que los histogramas de las escalas a grises dicen lo contrario, se entiende que esto sucede porque los cálculos realizados desplazan el histograma.
 
-                
+\subsection{Preguntas y análisis}
 
-            \item Visualmente, ¿cuál de las dos conversiones a escala de grises considera que representa mejor el "brillo" de la imagen original? ¿Por qué es esta distinción importante en un pipeline de procesamiento?
+\begin{itemize}[leftmargin=*]
 
-                
+    \item ¿Es equivalente el histograma de los canales por separado versus el de la imagen a escala de grises?
 
-            \item Si esta imagen tuviera ruido, ¿esperarían que afecte por igual a los tres canales de color? ¿Cómo creen que se vería reflejado en el histograma?
+    El histograma de los canales por separado no es equivalente al de la imagen a escala de grises. El primero presenta la distribución de la intensidad de cada canal individual, mientras que el segundo proporciona la distribución de intensidad general de la imagen. Cada histograma es útil en distintas situaciones.
 
-                
+    \item ¿Qué información revela el histograma de cada canal de color por separado sobre la composición cromática de la imagen?
 
-        \end{itemize}
+    El histograma de cada canal de color por separado revela la distribución de la intensidad que cada canal aporta a la composición de la imagen, es decir, nos brinda la información objetiva de como esta compuesta la imagen en función de cada canal.
+
+    \item Comparar los dos histogramas de escala de grises. ¿Son idénticos? Explicar por qué, basado en el concepto de luminancia perceptual (la sensibilidad del ojo humano a los colores verde, rojo y azul).
+
+    Los dos histogramas de escala de grises son distintos primeramente porque matemáticamente son distintos, y basado en la luminancia perceptual, la escala de grises calculada con la ponderación de sensibilidad del ojo humano representa mejor la información para el ojo humano.
+
+    \item Visualmente, ¿cuál de las dos conversiones a escala de grises considera que representa mejor el "brillo" de la imagen original? ¿Por qué es esta distinción importante en un pipeline de procesamiento?
+
+    Visualmente, la conversión basada en la luminancia perceptual representa mejor el brillo de la imagen para el ojo humano. En un pipeline de procesamiento es importante distinguir las dos conversiones porque para el pipeline lo que importa son los valores numéricos de la matriz de la imagen.
+
+    \item Si esta imagen tuviera ruido, ¿esperarían que afecte por igual a los tres canales de color? ¿Cómo creen que se vería reflejado en el histograma?
+
+     Afectaría a cada canal de color dependiendo del tipo de ruido, si es un ruido gausiano por ejemplo, este afectaría por igual a los tres canales. Esto se vería reflejado en el histograma como un suavizado, aumentando la desviación de la misma porque el ruido hace que la intensidad de la imagen se distribuya por toda la imagen.
+
+\end{itemize}
