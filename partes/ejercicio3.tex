@@ -1,21 +1,98 @@
 \section{Mejora de imágenes: ecualización de contraste}
 
-    \subsection{Subsección}
+    Se comparan dos enfoques para ecualizar una imagen a color de bajo contraste: ecualizar cada canal R, G y B por separado (enfoque 1) y ecualizar solo la luminancia $Y$ en el espacio YIQ, conservando la crominancia (enfoque 2). Luego, sobre el enfoque 2, se comparan el estiramiento lineal, la ecualización global y CLAHE en imágenes con histogramas concentrados en distintos rangos. El procedimiento completo, las tablas de métricas y las verificaciones adicionales se encuentran en el notebook \texttt{ecualizacion\_contraste.ipynb}.
 
-        Desarrollar en subsecciones si quieren \dots
+    \subsection*{Imágenes y métricas}
 
+        Se utilizaron cuatro fotografías tomadas con un Samsung Galaxy A04 en modo Pro, en JPEG de 8 bits (\textbf{Figura \ref{fig:ej3_casos}}). Cada una presenta una distribución de luminancia distinta (\textbf{Figura \ref{fig:ej3_cdf}}, la recta discontinua corresponde a una distribución uniforme): la de bajo contraste concentra el 98\,\% de sus píxeles entre los niveles 6 y 45, la oscura y la clara tienen el histograma desplazado hacia cada extremo (la clara, con el 10.78\,\% de los píxeles saturado en 255), y la de iluminación despareja combina una ventana iluminada con un interior en sombra.
+
+        \begin{figure}[H] \centering
+            \includegraphics{img/ejercicio3/casos_imagenes.pdf}
+            \caption{Imágenes utilizadas para el análisis.}
+            \label{fig:ej3_casos}
+        \end{figure}
+
+        \begin{figure}[H] \centering
+            \includegraphics{img/ejercicio3/casos_cdf.pdf}
+            \caption{Histogramas acumulados de la luminancia.}
+            \label{fig:ej3_cdf}
+        \end{figure}
+
+        Para que la comparación no dependa solo de la apreciación visual, se utilizan las métricas de la \textbf{Tabla \ref{tab:ej3_metricas}}.
+
+        \begingroup \setstretch{1.1}
+        \begin{table}[H] \centering
+            \begin{tblr}{
+                colspec = {lX}, width = \linewidth, rowsep = 2pt, colsep = 6pt, hlines, vlines,
+                cells = {valign = m}, row{1} = {bg = gray!15, font = \bfseries, halign = c}
+            }
+                Métrica & Qué mide \\
+                Contraste RMS & Desvío estándar de la luminancia $Y$, en niveles de 0 a 255. \\
+                Factor de ruido & Cociente entre el ruido de la imagen procesada y la original, medido en una zona plana luego de restar un suavizado gaussiano (por el gradiente de iluminación). \\
+                Separabilidad $d'$ & Diferencia de medias entre la gorra y el fondo, dividida por su desvío estándar promedio. \\
+                Croma $C^*$ y tono $\Delta h$ & Color agregado y cambio de tono respecto de la original, en el espacio Lab. \\
+                Fuera de gama & Píxeles que al volver a RGB quedan fuera del rango y deben recortarse. \\
+            \end{tblr}
+            \caption{Métricas utilizadas en la comparación.}
+            \label{tab:ej3_metricas}
+        \end{table}
+        \endgroup
+
+    \vspace{-1 cm}
+    \subsection*{Enfoque 1 frente a enfoque 2}
+
+        Ambos enfoques aumentan el contraste en una medida similar (contraste RMS de 72,62 y 73,23 en la imagen de bajo contraste), pero solo el enfoque 2 conserva el aspecto neutro de la escena (\textbf{Figura \ref{fig:ej3_enfoques}c}). El mapa de croma de la \textbf{Figura \ref{fig:ej3_croma}} muestra el color agregado por el enfoque 1, concentrado en la visera y en las sombras.
+
+        \begin{figure}[H] \centering
+            \includegraphics{img/ejercicio3/enfoques_comparacion.pdf}
+            \caption{Ecualización global de la imagen de bajo contraste con cada enfoque.}
+            \label{fig:ej3_enfoques}
+        \end{figure}
+
+        \vspace{-0.5 cm}
+        \begin{figure}[H] \centering
+            \includegraphics{img/ejercicio3/enfoques_croma.pdf}
+            \caption{Croma $C^*$ de la imagen original y de cada enfoque, con la misma escala.}
+            \label{fig:ej3_croma}
+        \end{figure}
+
+    \subsection*{Tipos de ecualización}
+
+        Las figuras \ref{fig:ej3_metodos_bajo} y \ref{fig:ej3_metodos_despareja} muestran los tres métodos sobre la imagen de bajo contraste y sobre la de iluminación despareja, los resultados de las imágenes oscura y clara se encuentran en el notebook.
+
+        \begin{figure}[H] \centering
+            \includegraphics{img/ejercicio3/metodos_bajo_contraste.pdf}
+            \caption{Tipos de ecualización sobre la imagen de bajo contraste.}
+            \label{fig:ej3_metodos_bajo}
+        \end{figure}
+
+        \begin{figure}[H] \centering
+            \includegraphics{img/ejercicio3/metodos_despareja.pdf}
+            \caption{Tipos de ecualización sobre la imagen con iluminación despareja.}
+            \label{fig:ej3_metodos_despareja}
+        \end{figure}
+
+    \vspace{-1 cm}
     \subsection{Preguntas y análisis}
 
         \begin{itemize}[leftmargin=*]
             \item Comparar los dos resultados. ¿Qué artefactos de color se observan en el primer enfoque? ¿Por qué ocurren?
-            
-                Hay que responder aca \dots
-            
+
+                El enfoque 1 introduce colores falsos en regiones originalmente neutras: en la imagen de bajo contraste, los píxeles con croma perceptible ($C^* > 5$) pasan del 0,20\,\% al 65,95\,\%, y en las imágenes con color el tono se desplaza entre 20\degree{} y 34\degree{}. 
+                
+                Ocurre porque cada canal se ecualiza con una curva calculada a partir de su propio histograma, como los tres histogramas difieren la proporción entre R, G y B cambia de forma distinta en cada píxel, y un gris deja de ser gris. Además, al llevar los tres canales a una distribución uniforme, sus medias se igualan (en torno a 131) y se elimina la dominante de color de la escena, lo que equivale a un balance de blancos no controlado.
+
             \item Explicar por qué el segundo enfoque preserva el balance de color original mientras mejora el contraste de manera efectiva.
-            
-                
-            
+
+                En YIQ, el brillo se concentra en $Y$ y el color en $I$ y $Q$, al ecualizar solo $Y$ se obtiene la misma mejora de contraste sin modificar la crominancia. Como las diferencias entre canales dependen únicamente de $I$ y $Q$, se conservan. En cambio, la preservación no es exacta, se conservan las diferencias pero no los cocientes entre canales, y entre el 1,1\,\% y el 6\,\% de los píxeles queda fuera de la gama RGB y debe recortarse. La elección del espacio también influye: HSV conserva los cocientes, por lo que al aclarar la imagen amplifica la dominante de color existente.
+
             \item Para el enfoque adecuado, analizar los efectos de distintos tipos de ecualización. ¿El enfoque depende de qué? (probar varias imágenes, con histogramas concentrados en distintos rangos).
-            
-                
+
+                El estiramiento lineal multiplica la señal y el ruido por la misma ganancia, por lo que no altera la separabilidad entre la gorra y el fondo. La ecualización global logra el mayor contraste en casi todos los casos, pero amplifica el ruido entre 4,6 y 9,9 veces en tres de las cuatro imágenes, sobre todo en regiones extensas y uniformes como el fondo o la pared, y reduce la separabilidad. CLAHE es el único método que mejora la separabilidad y, en la habitación, equilibra la ventana y el interior con menos de la mitad del ruido de la ecualización global, con el parámetro \textit{clip} se regula ese compromiso, y con valores mayores a 0,01 el ruido crece rápidamente. En la imagen clara, ningún método recupera las zonas saturadas.
+
+                La elección depende de la forma y posición del histograma, de la uniformidad de la iluminación, del ruido presente en la imagen y del objetivo. Por ejemplo, el estiramiento lineal es preferible si la imagen se utilizará para mediciones, la ecualización global si se busca el máximo contraste global y CLAHE si se busca contraste local.
         \end{itemize}
+
+    \subsection*{Conclusiones}
+
+        La ecualización de una imagen a color debe aplicarse sobre la luminancia, aunque la preservación del color depende del espacio elegido y del recorte de los colores fuera de gama. No existe un método adecuado para cualquier imagen, dado que todo aumento de contraste tiene como costo una amplificación del ruido, y ninguna ecualización recupera la información que se pierde durante la adquisición.
