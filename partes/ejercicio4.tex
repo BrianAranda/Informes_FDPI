@@ -1,8 +1,44 @@
 \section{Segmentación y visualización con paletas de color}
 
-    \subsection{Subsección}
+    El resultado de un proceso de segmentación o análisis a menudo es una imagen monocanal (una máscara, un mapa de probabilidad, un mapa de distancia). La forma en que visualizamos este resultado es crítica para su correcta interpretación. Podemos utilizar estas herramientas durante el proceso de análisis de una imagen.
+    \subsection{Consigna}
+        \begin{itemize}[leftmargin=*]
+            \item Elegir una imagen a color con bajo contraste.
+            \item Umbralizar un objeto de interés en el espacio que crea adecuado (pero sin binarizarlo, es decir, manteniendo los valores continuos).
+            \item Ecualizar el histograma.
+            \item Visualizar esta imagen monocanal resultante utilizando al menos cuatro paletas de color diferentes, de modo de resaltar detalles sutiles antes no perceptibles
+            \item Determinar la paleta apropiada para representar lo que se quiera destacar.
+            \item Evaluar la precisión de la segmentación lograda.
+        \end{itemize}
 
-        Desarrollar en subsecciones si quieren \dots
+    \subsection{Análisis de imagen elegida:}
+        Para este análisis se optó por utilizar la misma imagen de bajo contraste utilizada en el punto  de anterior de ecualización de contraste (\textbf{Figura \ref{fig:ej3_casos}}). En primera instancia se determinó si la imagen seleccionada presenta contraste bajo, sabiendo que el contraste es la relación entre las zonas más brillantes y más oscuras de una imagen, mediante un histograma de la luminancia, tanto de los canales RGB como también de la combinación ponderada de dichos canales (escala de grises) (\textbf{Figura \ref{fig:ej4_analisis_imagen}}).
+         
+        \begin{figure}[H] \centering
+            \includegraphics[scale=0.45]{img/ejercicio4/imagen_analizada.pdf}
+            \caption{Imágenes utilizadas para el análisis.}
+            \label{fig:ej4_analisis_imagen}
+        \end{figure}
+
+        Además, para no depender de una apreciación puramente visual por parte de los histogramas se planteó un análisis analítico de los valores como la desviación estándar, media lumínica y contraste RMS \textbf{Tabla \ref{tab:ej4_metricas_contraste}}.
+
+        \begingroup \setstretch{1.1}
+            \begin{table}[H] \centering
+                \begin{tblr}{
+                    colspec = {lcX}, width = \linewidth, rowsep = 2pt, colsep = 6pt, hlines, vlines,
+                    cells = {valign = m}, row{1} = {bg = gray!15, font = \bfseries, halign = c}
+                }
+                    Métrica & Valor & Qué mide \\
+                    Media lumínica ($\mu$) & 22.76 & Brillo global promedio de la imagen. \\
+                    Desviación estándar ($\sigma$) & 8.45 & Dispersión de las intensidades (contraste absoluto). \\
+                    Contraste RMS & 0.371 & Variación tonal relativa al brillo medio ($\sigma/\mu$). \\
+                \end{tblr}
+                \caption{Métricas de contraste y luminancia de la imagen analizada.}
+                \label{tab:ej4_metricas_contraste}
+            \end{table}
+        \endgroup
+
+        Los valores analíticos obtenidos 
 
     \subsection{Preguntas y análisis}
 
