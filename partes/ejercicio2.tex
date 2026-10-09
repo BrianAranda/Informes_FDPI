@@ -1,30 +1,255 @@
 \section{Umbralización/Binarización}
 
-    \subsection{Subsección}
+    Se busca segmentar un objeto de color distintivo de dos maneras: umbralizando la luminancia (escala de grises) y umbralizando el canal de matiz $H$ del espacio HSV, refinado con la saturación $S$ y el valor $V$. Luego se analizan la limpieza de la máscara, su robustez ante cambios de iluminación y otros espacios de color. El procedimiento completo, las tablas de métricas y la exploración interactiva de los umbrales se encuentran en el notebook \href{https://colab.research.google.com/github/BrianAranda/Informes_FDPI/blob/tp2/code/TP2_Umbralizacion_Binarizacion.ipynb}
+            {\textcolor{blue}{TP2\_Umbralizacion\_Binarizacion.ipynb}}.
 
-        Desarrollar en subsecciones si quieren \dots
+    \subsection*{Imagen y métricas}
+
+        Se utilizó la fotografía de una amapola roja sobre follaje verde de la \textbf{Figura \ref{fig:ej2_imagen}}: \textit{Poppy flower 02}, de Nayan j Nath, publicada en Wikimedia Commons con licencia CC0, en su versión de 1280×853 píxeles. Se eligió porque el rojo y el verde son colores opuestos en el círculo cromático pero tienen luminancias parecidas, de modo que separar la flor por su color debería ser sencillo y por su brillo, difícil.
+
+        Para evaluar las máscaras con métricas y no solo visualmente, se trazó a mano el contorno de la flor (141 vértices, \textbf{Figura \ref{fig:ej2_imagen}b}) y se lo utiliza como referencia. Como se define por la forma y no por el color, no favorece a ningún método. La referencia incluye el centro de la flor, que no es rojo, y su borde tiene una incerteza de algunos píxeles, por lo que las métricas sirven para comparar los métodos entre sí y no como valores absolutos.
+
+        \begin{figure}[H] \centering
+            \includegraphics{img/ejercicio2/imagen_referencia.pdf}
+            \caption{Imagen utilizada, contorno de referencia trazado a mano y luminancia.}
+            \label{fig:ej2_imagen}
+        \end{figure}
+
+        Las métricas utilizadas se resumen en la \textbf{Tabla \ref{tab:ej2_metricas}}.
+
+        \begingroup \setstretch{1.1}
+        \begin{table}[H] \centering
+            \begin{tblr}{
+                colspec = {lX}, width = \linewidth, rowsep = 2pt, colsep = 6pt, hlines, vlines,
+                cells = {valign = m}, row{1} = {bg = gray!15, font = \bfseries, halign = c}
+            }
+                Métrica & Qué mide \\
+                IoU & Intersección sobre unión entre la máscara y la referencia (1 indica coincidencia perfecta). \\
+                Precisión & Fracción de la máscara que pertenece a la flor. \\
+                Recall & Fracción de la flor que queda dentro de la máscara. \\
+                Solapamiento & Fracción compartida entre los histogramas normalizados de la flor y del fondo en un canal, de 0 (separables) a 1 (idénticos). Mide la separabilidad antes de umbralizar. \\
+                Razón de Fisher & $(\mu_{flor} - \mu_{fondo})^2 / (\sigma_{flor}^2 + \sigma_{fondo}^2)$ en un canal: distancia entre las medias respecto de la dispersión de cada clase. \\
+                Blobs y huecos & Componentes conexas de la máscara y regiones del fondo encerradas por ella. \\
+            \end{tblr}
+            \caption{Métricas utilizadas en la comparación.}
+            \label{tab:ej2_metricas}
+        \end{table}
+        \endgroup
+
+        Además, para conocer el mejor resultado posible de cada tipo de umbral se recorren todos los valores y se elige el de mayor IoU contra la referencia. Ese umbral no es un método de segmentación, porque utiliza la referencia, sino una cota superior: si con él la segmentación falla, ningún umbral global en ese dominio puede funcionar.
+
+    \subsection*{Escala de grises}
+
+        La conversión se realiza con la luminancia $Y = 0.299R + 0.587G + 0.114B$. La flor es en promedio algo más clara que el fondo (mediana de 109 contra 76), pero sus histogramas comparten el 58\,\% de la masa y la razón de Fisher es de 0,51: no existe un valle entre ambos (\textbf{Figura \ref{fig:ej2_gris}a}). En el barrido de umbrales (\textbf{Figura \ref{fig:ej2_gris}b}) el IoU nunca supera 0,41: al subir el umbral se elimina follaje, pero también los pétalos en sombra, y al bajarlo se completa la flor a costa de incorporar fondo.
+
+        \begin{figure}[H] \centering
+            \includegraphics{img/ejercicio2/gris_histograma_barrido.pdf}
+            \caption{Histograma de luminancia de la flor y del fondo (a) y métricas en función del umbral (b).}
+            \label{fig:ej2_gris}
+        \end{figure}
+
+        La \textbf{Tabla \ref{tab:ej2_tipos}} resume cada tipo de umbral con su mejor valor, salvo Otsu, que elige el suyo. ``A cero'' separa los mismos píxeles que el binario, porque solo conserva la intensidad original en lugar de llevarla al máximo, y los invertidos segmentan el follaje en sombra. Variando los umbrales de forma interactiva se observa lo mismo: con valores altos queda solo la zona más iluminada de los pétalos y con valores bajos se suman los tallos, el capullo y gran parte del follaje.
+
+        \begingroup \setstretch{1.1}
+        \begin{table}[H] \centering
+            \begin{tblr}{
+                colspec = {lcccc}, rowsep = 2pt, colsep = 8pt, hlines, vlines,
+                cells = {valign = m}, row{1} = {bg = gray!15, font = \bfseries, halign = c}
+            }
+                Tipo & Umbral & IoU & Precisión & Recall \\
+                Binario y a cero & 81 & 0,41 & 0,44 & 0,85 \\
+                Binario invertido y a cero invertido & 230 & 0,29 & 0,29 & 1,00 \\
+                Otsu & 86 & 0,41 & 0,46 & 0,78 \\
+                Otsu invertido & 86 & 0,09 & 0,12 & 0,22 \\
+                Banda (\texttt{inRange}) & 80 a 175 & 0,41 & 0,44 & 0,87 \\
+            \end{tblr}
+            \caption{Tipos de umbral en escala de grises.}
+            \label{tab:ej2_tipos}
+        \end{table}
+        \endgroup
+
+    \subsection*{Espacio HSV}
+
+        En OpenCV, el canal $H$ es un ángulo almacenado entre 0 y 179 (grados divididos por dos), y el rojo se encuentra justo en el empalme: el 81\,\% de los pétalos tiene $H \leq 5$ y el 10\,\% tiene $H \geq 170$. Por eso la elección de la paleta importa al visualizarlo: con \texttt{gray}, dos rojos casi idénticos se ven negro y blanco (\textbf{Figura \ref{fig:ej2_paletas}a}), mientras que una paleta cíclica como \texttt{twilight} asigna el mismo color a los dos extremos y la flor se ve homogénea (\textbf{Figura \ref{fig:ej2_paletas}b}).
+
+        Para umbralizar el rojo sin dividir el rango en dos intervalos se utiliza la distancia angular al matiz de interés, $d(H, H_c) = \min(|H - H_c|,\ 180 - |H - H_c|)$, con $H_c = 0$. Así el umbral sobre $H$ es un único parámetro, el ancho alrededor del centro (\textbf{Figura \ref{fig:ej2_paletas}c}).
+
+        \begin{figure}[H] \centering
+            \includegraphics{img/ejercicio2/hsv_paletas.pdf}
+            \caption{Canal $H$ con una paleta lineal (a) y una cíclica (b), y distancia angular al rojo (c).}
+            \label{fig:ej2_paletas}
+        \end{figure}
+
+        Con la distancia angular, el solapamiento entre flor y fondo baja a 0,03 y la razón de Fisher sube a 15,8. Calculada directamente sobre $H$, en cambio, la razón de Fisher da 0,10, menos que en escala de grises: la media y la varianza no tienen sentido en una variable circular, porque los rojos próximos a 0 y a 179 quedan en extremos opuestos del eje.
+
+        La \textbf{Figura \ref{fig:ej2_nubes}} muestra la separación entre clases en los dos enfoques. En escala de grises (a), los histogramas de la flor y del fondo se superponen en casi todo el rango de $Y$, y ningún umbral los separa: con el mejor umbral posible (línea discontinua), el 42\,\% del fondo queda dentro de la máscara y el 14\,\% de la flor queda fuera. En HSV se utilizan nubes de puntos, donde cada punto es un píxel de la flor (rojo) o del fondo (verde); se toman 2000 píxeles de cada clase, los mismos en ambos gráficos, para que el fondo no tape a la flor por ser más numeroso. En la rueda de matices (b), con el ángulo $H$ y la saturación $S$ como distancia al centro, la flor forma un único grupo alrededor de 0\degree{} y el follaje ocupa otro sector, separado por una zona vacía. Con la distancia angular (c), la región de la máscara (sombreada) contiene casi toda la flor y casi nada del fondo: queda fuera el 2,4\,\% de la flor y entra el 0,8\,\% del fondo.
+
+        \begin{figure}[H] \centering
+            \includegraphics{img/ejercicio2/dispersion_gris_hsv.pdf}
+            \caption{Histogramas de luminancia de la flor y del fondo con el mejor umbral (a), y nubes de píxeles en la rueda de matices (b) y en función de la distancia al rojo y la saturación (c).}
+            \label{fig:ej2_nubes}
+        \end{figure}
+
+        El IoU umbralizando solo $H$ se mantiene entre 0,95 y 0,96 para cualquier ancho entre 6 y 14, por lo que el umbral no es crítico; se eligió un ancho de 10, en el centro de ese intervalo. Los umbrales en $S$ ($S \geq 100$) y en $V$ ($V \geq 40$) casi no modifican el resultado (IoU de 0,961 a 0,962), porque el follaje es verde y saturado y ya queda excluido por $H$. Exigir $V \geq 80$ empieza a recortar los pétalos en sombra: el recall baja de 0,976 a 0,969.
+
+    \subsection*{Limpieza de la máscara}
+
+        La máscara de HSV tiene 37 componentes conexas y 49 huecos (\textbf{Figura \ref{fig:ej2_limpieza}a}). Se limpió con una apertura y un cierre, utilizando como elemento estructurante un disco de 15×15 píxeles; luego se conservó la mayor componente y se rellenó su contorno externo (\textbf{Tabla \ref{tab:ej2_limpieza}}). El funcionamiento de cada paso se explica en la última pregunta de la sección, con el ejemplo de la \textbf{Figura \ref{fig:ej2_morfologia}}.
+
+        \begin{figure}[H] \centering
+            \includegraphics{img/ejercicio2/morfologia_ejemplo.pdf}
+            \caption{Apertura (a, b y c) y cierre (d, e y f) sobre una grilla de píxeles, con un elemento estructurante cuadrado de 3×3 píxeles. Blanco: objeto; negro: fondo.}
+            \label{fig:ej2_morfologia}
+        \end{figure}
+
+        \begin{figure}[H] \centering
+            \includegraphics{img/ejercicio2/limpieza.pdf}
+            \caption{Máscara de HSV y resultado de cada paso de la limpieza.}
+            \label{fig:ej2_limpieza}
+        \end{figure}
+
+        \begingroup \setstretch{1.1}
+        \begin{table}[H] \centering
+            \begin{tblr}{
+                colspec = {lccc}, rowsep = 2pt, colsep = 8pt, hlines, vlines,
+                cells = {valign = m}, row{1} = {bg = gray!15, font = \bfseries, halign = c}
+            }
+                Paso & Blobs & Huecos & IoU \\
+                Máscara de HSV & 37 & 49 & 0,962 \\
+                Apertura & 3 & 17 & 0,961 \\
+                Cierre & 2 & 1 & 0,962 \\
+                Mayor componente & 1 & 1 & 0,967 \\
+                Relleno de huecos & 1 & 0 & 0,983 \\
+            \end{tblr}
+            \caption{Efecto de cada paso de la limpieza.}
+            \label{tab:ej2_limpieza}
+        \end{table}
+        \endgroup
+
+        La \textbf{Figura \ref{fig:ej2_mascaras}} compara sobre la imagen las máscaras principales.
+
+        \begin{figure}[H] \centering
+            \includegraphics{img/ejercicio2/comparacion_mascaras.pdf}
+            \caption{Máscaras obtenidas en escala de grises (a y b) y en HSV (c y d), superpuestas en cian.}
+            \label{fig:ej2_mascaras}
+        \end{figure}
+
+    \subsection*{Robustez ante cambios de iluminación}
+
+        Para evaluar la robustez se congelaron los umbrales elegidos sobre la imagen original y se aplicaron, sin modificarlos, a versiones de la misma imagen con la iluminación alterada: un oscurecimiento (×0,5) y un aclarado (×1,4) global, un gradiente lateral (de ×0,35 a ×1,3) y dos cambios en el color de la luz, una cálida y una fría (\textbf{Figura \ref{fig:ej2_robustez}} y \textbf{Tabla \ref{tab:ej2_robustez}}).
+
+        \begin{figure}[H] \centering
+            \includegraphics{img/ejercicio2/robustez.pdf}
+            \caption{Condiciones de iluminación simuladas y máscaras con los umbrales fijos de escala de grises y de HSV, con su IoU.}
+            \label{fig:ej2_robustez}
+        \end{figure}
+
+        \begingroup \setstretch{1.1}
+        \begin{table}[H] \centering
+            \begin{tblr}{
+                colspec = {lcccc}, rowsep = 2pt, colsep = 8pt, hlines, vlines,
+                cells = {valign = m}, row{1} = {bg = gray!15, font = \bfseries, halign = c}
+            }
+                Condición & Gris & HSV, ancho 6 & HSV, ancho 10 & HSV, ancho 14 \\
+                Original & 0,41 & 0,95 & 0,96 & 0,95 \\
+                Oscura & 0,01 & 0,94 & 0,96 & 0,95 \\
+                Clara & 0,35 & 0,73 & 0,94 & 0,94 \\
+                Gradiente & 0,32 & 0,94 & 0,96 & 0,96 \\
+                Cálida & 0,43 & 0,79 & 0,96 & 0,95 \\
+                Fría & 0,33 & 0,89 & 0,93 & 0,94 \\
+            \end{tblr}
+            \caption{IoU con los umbrales congelados en cada condición de iluminación.}
+            \label{tab:ej2_robustez}
+        \end{table}
+        \endgroup
+
+        El umbral en escala de grises colapsa ante cualquier cambio de intensidad, mientras que el de HSV se mantiene en el oscurecimiento y en el gradiente. Con la imagen aclarada, en cambio, el canal R de los pétalos se satura en 255 (el 25,5\,\% de los pétalos ya está saturado en la original) mientras G y B siguen creciendo, y el matiz se desplaza hacia el naranja; con la luz fría, el matiz se desplaza hacia el magenta. La tabla también muestra que el ancho elegido importa fuera de la condición de calibración: con un ancho de 6, la imagen aclarada cae a 0,73 y la luz cálida a 0,79.
+
+    \subsection*{Otros espacios de color}
+
+        Para separar rojo de verde existen ejes que miden exactamente esa diferencia: $a^*$ en CIE L*a*b* (de verde a rojo) y $C_r$ en YCrCb (diferencia al rojo). Al ser ejes lineales no presentan el problema del empalme, y Otsu puede elegir el umbral automáticamente (\textbf{Tabla \ref{tab:ej2_espacios}}).
+
+        \begingroup \setstretch{1.1}
+        \begin{table}[H] \centering
+            \begin{tblr}{
+                colspec = {lccc}, rowsep = 2pt, colsep = 8pt, hlines, vlines,
+                cells = {valign = m}, row{1} = {bg = gray!15, font = \bfseries, halign = c}
+            }
+                Canal & Solapamiento & Razón de Fisher & IoU con Otsu \\
+                $Y$ (gris) & 0,58 & 0,51 & 0,41 \\
+                $V$ (HSV) & 0,08 & 8,19 & 0,90 \\
+                $S$ (HSV) & 0,06 & 8,35 & 0,92 \\
+                $d(H, 0)$ (HSV) & 0,03 & 15,82 & 0,89 \\
+                $a^*$ (Lab) & 0,02 & 25,74 & 0,96 \\
+                $C_r$ (YCrCb) & 0,02 & 21,19 & 0,94 \\
+            \end{tblr}
+            \caption{Separabilidad de cada canal y resultado de umbralizarlo con Otsu.}
+            \label{tab:ej2_espacios}
+        \end{table}
+        \endgroup
+
+        En las nubes de píxeles de la \textbf{Figura \ref{fig:ej2_espacios}}, en el plano R--G (a) las clases ya están separadas, pero en una dirección oblicua que depende del brillo. En los planos $a^*$--$b^*$ (b) y $C_r$--$C_b$ (c), en cambio, las separa una línea vertical, que es el umbral que encuentra Otsu.
+
+        \begin{figure}[H] \centering
+            \includegraphics{img/ejercicio2/dispersion_espacios.pdf}
+            \caption{Nubes de píxeles de la flor y del fondo en los planos de cromaticidad de RGB (a), Lab (b) e YCrCb (c), con el umbral de Otsu.}
+            \label{fig:ej2_espacios}
+        \end{figure}
+
+        Con un umbral fijo, $a^*$ no es invariante a la intensidad: en la imagen oscurecida el IoU baja de 0,96 a 0,89, mientras que con HSV se mantiene en 0,96. Si en cambio se recalcula Otsu en cada imagen, $a^*$ se mantiene entre 0,95 y 0,96 en todas las condiciones de iluminación simuladas.
 
     \subsection{Preguntas y análisis}
 
         \begin{itemize}[leftmargin=*]
             \item ¿Se logró segmentar el objeto de manera efectiva en la escala de grises? ¿Qué problemas aparecieron? (Pista: ¿el objeto y el fondo tenían brillos similares?).
-            
-                Hay que responder aca \dots
+
+                No. Ningún tipo de umbral en escala de grises logró segmentar la flor: el mejor resultado posible, eligiendo el umbral con la referencia, es un binario con umbral 81 e IoU de 0,41, con una precisión de 0,44, es decir, más de la mitad de lo segmentado es follaje. Otsu elige un umbral de 86 y obtiene el mismo IoU, y las variantes invertidas, ``a cero'' y la banda doble no lo mejoran.
+
+                El problema es que la flor y el fondo tienen brillos similares: sus histogramas de luminancia comparten el 58\,\% de la masa. Un rojo saturado tiene una luminancia media, porque $Y$ pondera a R con 0,299 y los pétalos tienen G y B bajos, y cae en el mismo rango que el follaje iluminado. Además, la flor no tiene un brillo uniforme, ya que la sombra del tallo y los pliegues la oscurecen, y el fondo tiene hojas claras y oscuras. Que Otsu coincida con el mejor umbral posible indica que el límite está en el dominio y no en la forma de elegir el umbral: la conversión a escala de grises reduce tres canales a uno y descarta justamente la información que separaba a ambos colores.
 
             \item ¿Por qué la umbralización en el canal H es significativamente más robusta y efectiva para esta tarea? Relacionar la respuesta con el concepto de “desacoplamiento de luminancia y crominancia”.
-            
-                
+
+                HSV separa en ejes distintos el color ($H$ y su pureza, $S$) de la cantidad de luz ($V$). El matiz se calcula a partir de cocientes entre diferencias de canales, por lo que si la iluminación multiplica R, G y B por un mismo factor, como ocurre con una sombra o un cambio de exposición, $H$ no cambia y todo el efecto se refleja en $V$. Por eso los pétalos iluminados y los que están bajo la sombra del tallo tienen el mismo matiz aunque su luminancia sea muy distinta: lo que en escala de grises era un rango amplio y superpuesto con el fondo, en $H$ es un grupo compacto, separado del follaje.
+
+                Las métricas lo confirman: el solapamiento entre flor y fondo baja de 0,58 a 0,03, la razón de Fisher sube de 0,51 a 15,8 y el IoU pasa de 0,41 a 0,96 umbralizando solo $H$, con cualquier ancho entre 6 y 14. Con los umbrales congelados, HSV se mantiene entre 0,93 y 0,96 en todas las condiciones simuladas, mientras que la escala de grises cae hasta 0,01.
+
+                Para aprovecharlo hay que tener en cuenta dos limitaciones. El rojo está en el empalme de $H$, por lo que se necesitan dos intervalos o la distancia angular; calculada directamente sobre $H$, la razón de Fisher (0,10) indicaría erróneamente que el matiz separa peor que el gris. Y en colores poco saturados, muy oscuros o con un canal saturado, el matiz es inestable o está mal medido: por eso el centro de la flor queda fuera de la máscara y la imagen aclarada pierde precisión.
 
             \item ¿Otro espacio de color podría ser mejor para el objeto/imagen seleccionada?
-            
-                
+
+                Sí. Para separar rojo de verde, el canal $a^*$ de CIE L*a*b* mide directamente esa diferencia, y $C_r$ de YCrCb se comporta de forma similar. Ambos separan mejor que la distancia angular en $H$ (razón de Fisher de 25,7 y 21,2 contra 15,8) y, al ser ejes lineales, no presentan el problema del empalme. Además, su histograma es bimodal entre flor y fondo, por lo que Otsu encuentra un buen umbral sin ajuste manual: IoU de 0,96 con $a^*$. Recalculando Otsu en cada imagen, $a^*$ fue el método más estable ante los cambios de iluminación simulados, entre 0,95 y 0,96, incluida la luz fría.
+
+                La desventaja es que $a^*$ y $C_r$ son diferencias de color y no cocientes, por lo que no son invariantes a la intensidad: con un umbral fijo, la imagen oscurecida baja a 0,89, mientras que HSV se mantiene en 0,96. La elección depende entonces del sistema: si el umbral se calibra una sola vez y la intensidad de la luz varía, conviene $H$; si el umbral puede recalcularse en cada imagen, $a^*$ con Otsu es más simple y separa mejor. Para otros colores el eje adecuado sería otro, por ejemplo $b^*$ o $C_b$ para separar azul de amarillo.
 
             \item Describir un escenario práctico (industrial, médico, etc.) donde esta técnica de segmentación en HSV sería superior a una en escala de grises. ¿Es robusta la técnica o se debe ajustar cuidadosamente a cada imagen? (imaginando cambios en el entorno abordado: por hora del día, ruptura de una fuente de luz, etc.)
-            
-                
+
+                Un escenario es la detección de frutos maduros en un invernadero, por ejemplo para un robot de cosecha: tomates o frutillas rojas entre las hojas, que es la misma situación de esta imagen. En escala de grises el fruto se confunde con las hojas iluminadas, y un fruto verde y uno rojo pueden tener la misma luminancia, por lo que tampoco podría estimarse la madurez. Con un umbral en $H$ la discriminación es directa e independiente de las sombras de las hojas. Otros ejemplos son la clasificación de piezas por color en una línea de producción o, en histopatología, la separación de tejidos teñidos de colores distintos pero de brillo similar.
+
+                La técnica es robusta ante cambios de intensidad: con los umbrales congelados, el IoU se mantiene en 0,96 con la imagen oscurecida y con el gradiente lateral, que representan otra hora del día o una fuente de luz que falla de un lado, mientras que en escala de grises cae a 0,01 y 0,32. No lo es ante cambios en el color de la luz ni ante la saturación del sensor: con luz fría baja a 0,93 y con la imagen aclarada a 0,94, y con un ancho más ajustado la imagen aclarada cae a 0,73. En un invernadero, el amanecer, el atardecer o las lámparas de cultivo de colores desplazarían el matiz de toda la escena.
+
+                Por lo tanto, no alcanza con ajustar el umbral una vez: conviene controlar la iluminación (fuente propia de color fijo y exposición sin saturar) o compensarla con balance de blancos, por ejemplo con una referencia gris en la escena, elegir un ancho con margen cuando el fondo está lejos en el círculo cromático y, en exteriores, recalcular el umbral periódicamente.
 
             \item La máscara binaria resultante, ¿queda "limpia" (un solo blob sólido) o tiene huecos/píxeles sueltos? ¿Qué tipo de operación imaginan que podría usarse después para “limpiar” ese resultado?
-            
-                
 
+                No queda limpia. La máscara de HSV tiene un blob principal y 36 componentes sueltas (manchas rojizas del follaje, el borde del capullo y ruido en zonas oscuras), y 49 huecos dentro de la flor: el centro, formado por la cápsula verde amarillenta y los estambres oscuros, que no son rojos, y puntos oscuros sobre los pétalos.
+
+                Se puede limpiar con operaciones morfológicas, que modifican la forma de la máscara con un elemento estructurante: una figura pequeña, en este caso un disco de 15×15 píxeles, que se desplaza sobre toda la imagen. En ambas operaciones básicas se centra el disco sobre cada píxel y se miran los píxeles de la máscara que quedan debajo. En la erosión, el píxel queda blanco solo si todo lo que cubre el disco es blanco: cada región pierde un borde del ancho del radio del disco (7 píxeles), como si se la gastara con una goma redonda, y lo que es más angosto que el disco desaparece por completo. En la dilatación ocurre lo contrario: el píxel pasa a ser blanco si al menos uno de los píxeles que cubre el disco es blanco, de modo que cada región gana un borde de 7 píxeles, como si se repasara su contorno con un pincel redondo, y los huecos más angostos que el disco quedan tapados porque se cubren desde ambos lados. La \textbf{Figura \ref{fig:ej2_morfologia}} muestra las dos operaciones en un ejemplo pequeño, con un cuadrado de 3×3 píxeles (radio de 1 píxel) en lugar del disco. Con estas dos operaciones, la limpieza se hizo en cuatro pasos:
+
+                \textbf{Apertura} (erosión y luego dilatación). En el ejemplo, la erosión le quita al bloque su anillo exterior y borra el punto suelto, en el que el cuadrado nunca entra (\textbf{Figura \ref{fig:ej2_morfologia}b}); la dilatación le devuelve el anillo al bloque, pero el punto no reaparece (\textbf{Figura \ref{fig:ej2_morfologia}c}). En la flor, la erosión gasta 7 píxeles del borde de todas las regiones: la flor se achica, pero los puntos sueltos del follaje, que en su mayoría miden unos 10 píxeles en total, desaparecen. La dilatación vuelve a agregar 7 píxeles alrededor de lo que quedó, y la flor recupera su tamaño; los puntos borrados no vuelven, porque ya no queda nada de ellos que pueda crecer. Las componentes pasan de 37 a 3.
+
+                \textbf{Cierre} (dilatación y luego erosión). Es el orden inverso. En el ejemplo, la dilatación agranda el bloque un anillo y cubre el hueco y la grieta desde ambos lados (\textbf{Figura \ref{fig:ej2_morfologia}e}); la erosión devuelve el borde exterior a su lugar, pero el hueco y la grieta no se reabren (\textbf{Figura \ref{fig:ej2_morfologia}f}). En la flor, la dilatación agrega 7 píxeles alrededor de todo lo blanco, y los huecos y grietas de menos de 15 píxeles de ancho quedan tapados porque se cubren desde ambos lados. La erosión posterior quita esos 7 píxeles del borde exterior, que vuelve a su lugar, pero los huecos tapados no se reabren, porque dentro de ellos ya no queda ningún píxel negro desde donde la erosión pueda avanzar. Los huecos pasan de 17 a 1.
+
+                \textbf{Mayor componente conexa}. Se agrupan en ``islas'' los píxeles blancos que se tocan entre sí y se conserva la más grande, que es la flor. Así se eliminan las dos manchas del fondo que sobrevivieron a la apertura porque eran más grandes que el disco (entre 900 y 1700 píxeles).
+
+                \textbf{Relleno de huecos}. Se traza el contorno exterior de la flor y se pinta todo su interior, sin importar el tamaño de los huecos. Resuelve el único hueco que queda, el centro de la flor, que mide unos 88×78 píxeles: es demasiado ancho para que el cierre lo tape con un disco de 15 píxeles.
+
+                El resultado es un único blob sin huecos, y el IoU pasa de 0,962 a 0,983. El tamaño del disco debe elegirse con cuidado: uno muy chico no elimina las manchas, y uno muy grande redondea las puntas de los pétalos y podría unir la flor con objetos cercanos. El relleno también depende del objetivo: es correcto si el objeto de interés es la flor completa, pero no si se quiere medir solo el área roja.
+
+            \item ¿Usar una paleta de color adecuada puede ayudar en este proceso?
+
+                Sí. Al visualizar el canal $H$ con la paleta \texttt{gray}, la flor aparece como una mezcla de negro y blanco, porque sus rojos están en los dos extremos del rango, y eso sugiere un ruido que no existe en el color real o lleva a elegir un único intervalo que deja fuera parte de la flor. Una paleta cíclica como \texttt{twilight} respeta la naturaleza angular del dato y muestra la flor como una región homogénea. Para elegir el ancho del umbral resulta útil representar la distancia angular con una paleta secuencial y perceptualmente uniforme, como \texttt{viridis}, y para $a^*$ una paleta divergente centrada en el valor neutro, porque el signo del dato tiene significado (verde o rojo).
         \end{itemize}
+
+    \subsection*{Conclusiones}
+
+        El éxito de una umbralización depende más del dominio que del método para elegir el umbral: en escala de grises ningún umbral separa la flor del fondo, porque sus luminancias se superponen, mientras que en el matiz o en $a^*$ la separación es casi completa. Antes de umbralizar conviene medir la separabilidad de cada canal y tener en cuenta su naturaleza, como la circularidad del matiz. Separar la luminancia de la crominancia da robustez ante cambios de intensidad, pero no ante cambios en el color de la luz ni ante la saturación del sensor, por lo que el umbral debe validarse en las condiciones reales de uso.
