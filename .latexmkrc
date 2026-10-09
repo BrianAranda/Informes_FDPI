@@ -13,9 +13,8 @@ $pdflatex = 'pdflatex -synctex=1 -interaction=nonstopmode -file-line-error %O %S
 $out_dir = '.';
 $aux_dir = 'build';
 
-# Bibliografía: latexmk detecta solo si hace falta bibtex o biber
-# 2 = además borra el .bbl al limpiar con latexmk -c
-$bibtex_use = 2;
+# Bibliografía: 1 = solo si hay citas y archivo .bib
+$bibtex_use = 1;
 
 # Extensiones extra que borra "latexmk -c"
 $clean_ext = 'synctex.gz run.xml nav snm vrb acn acr alg glo gls glg ist';

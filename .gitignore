@@ -1,9 +1,14 @@
 # Archivos de compilación y editor
 build/
 .vscode/
+.latexmkrc
 
 # Salida de compilación (se regenera)
 *.synctex.gz
+*.synctex*
+*synctex(busy)*
+*busy*.gz
+texput.log
 main.pdf
 
 # Auxiliares de LaTeX (por si se compila sin build/)
