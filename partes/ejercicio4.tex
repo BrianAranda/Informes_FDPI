@@ -2,7 +2,7 @@
 \section{Segmentación y visualización con paletas de color}
 
     El resultado de un proceso de segmentación o análisis a menudo es una imagen monocanal (una máscara, un mapa de probabilidad, un mapa de distancia). La forma en que visualizamos este resultado es crítica para su correcta interpretación. Podemos utilizar estas herramientas durante el proceso de análisis de una imagen.
-    \subsection{Consigna}
+    \subsection*{Consigna}
         \begin{itemize}[leftmargin=*]
             \item Elegir una imagen a color con bajo contraste.
             \item Umbralizar un objeto de interés en el espacio que crea adecuado (pero sin binarizarlo, es decir, manteniendo los valores continuos).
@@ -12,7 +12,7 @@
             \item Evaluar la precisión de la segmentación lograda.
         \end{itemize}
 
-    \subsection{Análisis de imagen elegida:}
+    \subsection*{Análisis de imagen elegida:}
         Para este análisis se optó por utilizar la misma imagen de bajo contraste utilizada en el punto  de anterior de ecualización de contraste (\textbf{Figura \ref{fig:ej3_casos}}). En primera instancia se determinó si la imagen seleccionada presenta contraste bajo, sabiendo que el contraste es la relación entre las zonas más brillantes y más oscuras de una imagen, mediante un histograma de la luminancia, tanto de los canales RGB como también de la combinación ponderada de dichos canales (escala de grises) (\textbf{Figura \ref{fig:ej4_analisis_imagen}}).
          
         \begin{figure}[H] \centering
@@ -108,5 +108,10 @@
             \item ¿Puedo segmentar sobre un canal de color determinado? ¿Y aplicar la máscara a todos los canales de la imagen?
             
             Sí, la segmentación suele realizarse sobre un único canal (como el de escala de grises o aquel con mayor contraste para el objeto de interés) porque simplifica la umbralización a un problema unidimensional. El resultado es una matriz lógica o máscara bidimensional (de ceros y unos). Como los tres canales de la imagen a color (RGB) comparten exactamente las mismas coordenadas espaciales, esta máscara se puede aplicar multiplicándola punto a punto por cada canal individualmente. De esta forma, se aíslan los píxeles de interés recuperando su color original sin que la crominancia afecte las reglas de segmentación.
+
+            \vspace{0.5cm}
+
+            El procedimiento completo, las tablas de métricas y las verificaciones adicionales se encuentran en el notebook \href{https://colab.research.google.com/drive/1Gc03dinAAQ3XRl5PhrtQih_jmHh2BCLA?usp=sharing}
+            {\textcolor{blue}{ejercicio4.ipynb}}.
 
         \end{itemize}
