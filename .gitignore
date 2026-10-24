@@ -1,3 +1,6 @@
+# Archivos de desarrollo
+.code/ejercicio_1/context
+
 # Archivos de compilación y editor
 build/
 .vscode/
