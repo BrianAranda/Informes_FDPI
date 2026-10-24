@@ -32,3 +32,6 @@ main.pdf
 *.acr
 *.alg
 *.ist
+
+# Datos pesados (escenas Landsat): superan el límite de GitHub
+code/ejercicio_2/datos/
