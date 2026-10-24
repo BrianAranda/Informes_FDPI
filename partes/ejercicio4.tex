@@ -1,9 +1,78 @@
 \section{Identificación de suelos y áreas sin vegetación}
 
-    \subsection{Subtitulo}
+    \subsection{Desarrollo}
 
-        Desarrollar el ejercicio por subsecciones queda prolijo \dots
+    Inicialmente se toman las bandas 7, 6 y 4 para componer la imagen como se indica en la consigna, para explorar la normalización de los histogramas se realiza una comparación entre distintos métodos como se muestra visualmente en la Fig. \ref{fig:ej4_metodos}. Adicionalmente se muestran los corresponidentes histogramas en la Fig.\ref{fig:ej4_histogramas}.
+
+    \begin{figure}[H]
+        \includegraphics[width=\textwidth]{img/ej4_metodos.png}
+        \caption{Comparativa de métodos de normalización.}
+        \label{fig:ej4_metodos}
+    \end{figure}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.8\textwidth]{img/ej4_histogramas.png}
+        \caption{Comparativa de los histogramas de normalización.}
+        \label{fig:ej4_histogramas}
+    \end{figure}
+
+    Con base en estas comparativas se selecciona a Percentil 2-98 como método de normalización, debido a una preferencia visual hacia el mismo y a la distribución de su histograma.
+
+    A continuación se explora el área geográfica de la provincia en busca de alguna región con escasa o sin vegetación, dada la naturaleza de Misiones, dichas regiones resultan poco numerosas y pequeñas.
+    Con esto en mente, la zona seleccionada se muestra en la Fig. \ref{fig:ej4_region}, utilizando imagen satelital de \textbf{Esri World Imagery} como referencia.
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.6\textwidth]{img/ej4_region.png}
+        \caption{Zona seleccionada.}
+        \label{fig:ej4_region}
+    \end{figure}
+
+    Se toman como composiciones de interés para analizar los suelos y áreas sin vegetación:
+    \begin{itemize}
+        \item \textbf{7-6-4 (falso color urbano)}: es la composición principal. Combina SWIR 2, SWIR 1 y Rojo, las tres bandas de interés del punto 4. El SWIR es sensible a la composición mineral y al contenido de humedad del suelo, y el rojo ayuda a distinguir zonas con vegetación escasa o nula. Se espera que el suelo expuesto se destaque con tonos distintos a los de la vegetación.
+        \item \textbf{7-5-4 (infrarrojo de onda corta)}: reemplaza SWIR 1 por el NIR. Al incorporar el NIR, que la vegetación sana refleja mucho, se refuerza el contraste entre suelo desnudo y cobertura vegetal, manteniendo SWIR 2 para la humedad del suelo.
+        \item \textbf{6-5-4 (análisis de vegetación)}: usa SWIR 1, NIR y Rojo. Resalta las diferencias entre vegetación y suelo, y permite evaluar si se confunden en cultivos con poca cobertura.
+        \item \textbf{5-6-4 (uso de suelo, tierra/agua)}: coloca el NIR en el canal rojo y SWIR 1 en el verde. Sirve como referencia para separar tierra y agua, y para comprobar que las zonas oscuras en SWIR no sean cuerpos de agua.
+        \item Otros.
+    \end{itemize}
+
+    La comparativa entre estas composiciones sobre la zona seleccionada se presenta en la Fig. \ref{fig:ej4_composiciones}.
+
+    \begin{figure}[H]
+        \includegraphics[width=\textwidth]{img/ej4_composiciones.png}
+        \caption{Comparativa de composiciones.}
+        \label{fig:ej4_composiciones}
+    \end{figure}
+
+    Se observa que \textbf{falso color}, \textbf{SWIR} y \textbf{vegetación} presentan una mejor seperación de zonas sin vegetación que las demas composiciones. Siendo las diferencias entre estas tres que falso color es más conservador al resaltar dichas zonas. No se debe tomar como comparativa directa la imagen de referencia satelital de la Fig. \ref{fig:ej4_region}, dado que no se tiene la fecha de captura de la misma.
+    Se aprecia con mayor cercanía la misma comparación en la Fig. \ref{fig:ej4_composiciones_zoom}.
+    \begin{figure}[H]
+        \includegraphics[width=\textwidth]{img/ej4_composiciones_zoom.png}
+        \caption{Comparativa de composiciones con zoom.}
+        \label{fig:ej4_composiciones_zoom}
+    \end{figure}
+
+    Observando con mayor nivel de cercanía, se considera que la composición \textbf{falso color} representa mejor las zonas sin vegetación que las demás composiciones porque esta resalta únicamente dichas zonas. Mientras que las composiciones \textbf{SWIR} y \textbf{vegetación}, si bien ilustran las zonas sin vegetación, también resaltan las zonas verdes. Por este motivo se selecciona como mejor composición para el análisis de suelos y áreas sin vegetación a \textbf{falso color}. Se presenta una comparativa de la composición seleccionada contra la composición \textbf{color natural} y la imagen satelital de referencia de \textbf{Esri World Imagery} en la Fig. \ref{fig:ej4_comparativa}.
+
+    \begin{figure}[H]
+        \includegraphics[width=\textwidth]{img/ej4_comparativa.png}
+        \caption{Comparativa de composiciones contra imagen satelital.}
+        \label{fig:ej4_comparativa}
+    \end{figure}
+
+    Con esto se demuestra la capacidad de la composición de identificar zonas sin vegetación. Por otro lado, para analizar las características del suelo se realiza un procesamiento con mayor cercanía como se muestra en la Fig. \ref{fig:ej4_comparativa_zoom}.
+
+    \begin{figure}[H]
+        \includegraphics[width=\textwidth]{img/ej4_comparativa_zoom.png}
+        \caption{Comparativa de composiciones contra imagen satelital con mayor cercanía.}
+        \label{fig:ej4_comparativa_zoom}
+    \end{figure}
+
+    Se aprecia que la composición brinda cierta escala de color para el grado de suelo descubierto, de blanco a violeta, siendo a más violeta mayor el grado de suelo descubierto. Para analizar las características del suelo se considera que la resolución resulta insuficiente para obtener información sobre la composición particular del suelo más allá de cuantificar el grado de cobertura del mismo.
+
 
     \subsection{Conclusiones}
 
-        Acá va la conclusión de este ejercicio \dots
+        Como conclusión de esta actividad se considera que es posible resaltar, con cierta escala de color, zonas con poca vegetación utilizando las bandas 7, 6 y 4 del Landsat. Pero realizar un anális de la composición del suelo en base a la información contenida en las imágenes de dicho satélite resulta poco viable dada la resolución de estas imágenes.
