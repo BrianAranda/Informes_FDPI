@@ -1,5 +1,6 @@
 # Archivos de desarrollo
 .code/ejercicio_1/context
+CLAUDE.md
 
 # Archivos de compilación y editor
 build/
@@ -8,7 +9,6 @@ build/
 # Salida de compilación (se regenera)
 *.synctex.gz
 main.pdf
-CLAUDE.md
 
 # Auxiliares de LaTeX (por si se compila sin build/)
 *.aux
