@@ -5,6 +5,7 @@ build/
 # Salida de compilación (se regenera)
 *.synctex.gz
 main.pdf
+CLAUDE.md
 
 # Auxiliares de LaTeX (por si se compila sin build/)
 *.aux
