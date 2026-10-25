@@ -1,9 +1,130 @@
+% !TEX root = ../main.tex
 \section{Identificación de cuerpos de agua}
 
-    \subsection{Subtitulo}
+    Se trabajó con las dos escenas provistas por la cátedra, del 03/04/2024 y del 30/06/2024. Ambas corresponden a la órbita 224/079, que cubre el sur de Misiones y parte de Corrientes, de Itapúa (Paraguay) y de Rio Grande do Sul (Brasil). Aunque la consigna menciona Landsat 8, la primera escena es de Landsat 9 y la segunda de Landsat 8. Los dos satélites tienen las mismas bandas y están calibrados entre sí, así que pueden compararse. 
+        
+    Las escenas son productos de nivel 2, que traen la reflectancia de superficie ya corregida por la atmósfera, guardada en enteros de 16 bits y sin compresión con pérdida. Cada valor se convirtió a reflectancia con $\rho = \mathrm{DN} \cdot 2{,}75 \times 10^{-5} - 0{,}2$, usando los factores del archivo de metadatos \cite{ej2_usgs_l2}. La corrección atmosférica deja valores apenas negativos sobre el agua, de hasta $-0{,}01$, que se llevaron a 0. Las nubes ocupan como máximo el 0,02\,\% de cada escena y se descartaron con la banda de calidad \texttt{QA\_PIXEL}.
 
-        Desarrollar el ejercicio por subsecciones queda prolijo \dots
+    \subsection{Zonas seleccionadas}
 
+        La escena cubre unos 185~km de lado, por lo que, como sugiere la consigna, se trabajó sobre recortes. Se eligieron tres zonas de 20~km de lado ($666 \times 666$ píxeles), todas con la misma escala para que las figuras y los porcentajes se puedan comparar entre sí. Cada zona muestra un tipo de cuerpo de agua distinto (\textbf{Figura \ref{fig:ej2_zonas}}).
+
+        \begin{figure}[H] \centering
+            \includegraphics[width=.6\textwidth]{img/ejercicio2/zonas_ubicacion.pdf}
+            \caption{Zonas de estudio sobre la escena del 03/04/2024 en color natural (bandas 4, 3 y 2).}
+            \label{fig:ej2_zonas}
+        \end{figure}
+
+        \begin{itemize}
+            \item \textbf{Zona A:} El río Paraná entre Posadas y Encarnación.
+            \item \textbf{Zona B:} Una curva del río Uruguay donde desembocan los arroyos Chimiray, Tunas y Concepción.
+            \item \textbf{Zona C:} El Paraná a la altura de Garuhapé y los arroyos que desembocan en él.
+        \end{itemize}
+
+        Las dos fechas tienen la misma órbita, pero sus cuadrículas no coinciden porque la del 30/06 está corrida 1.500~m al este, unas 50 columnas. Por eso cada zona se definió por su centro en latitud y longitud, que se convirtió a coordenadas UTM y después a fila y columna en cada escena.
+
+        En la \textbf{Figura \ref{fig:ej2_zonas}} las cuatro imágenes tienen el mismo estiramiento, entre los percentiles 2 y 98 de toda la escena. Ya en color natural se nota que el agua no siempre se ve oscura. El Paraná, al ser embalsado, aparece casi negro porque el agua quieta deja decantar los sedimentos. El Uruguay, en cambio, se ve verde claro, porque lleva mucho sedimento en suspensión.
+
+    \subsection{Bandas seleccionadas}
+
+        La consigna propone las bandas 2 (azul), 5 (NIR) y 7 (SWIR 2). Para justificar la elección se midió cuánto se separan las clases en cada canal. Se tomaron píxeles de muestra de cinco clases (agua del Paraná, agua del Uruguay, vegetación, suelo desnudo y zona urbana) y se midió, banda por banda, cuánto se separa el agua de las demás. Se usaron la razón de Fisher y el coeficiente de solapamiento entre los histogramas de las dos clases.
+
+        La \textbf{Figura \ref{fig:ej2_fisher}} resume el resultado. Cada celda es la razón de Fisher entre un tipo de agua y la cobertura terrestre que más se le parece en esa banda. En el infrarrojo el agua casi no refleja luz (el Paraná no supera 0,002), mientras que las coberturas terrestres reflejan entre 0,13 y 0,33. Por eso las bandas 5, 6 y 7 separan bien los dos tipos de agua, con valores entre 7,9 y 19,4, y el NIR es la mejor. En el visible la razón de Fisher no supera 5,1 y para el agua turbia del Uruguay cae casi a 0. La banda 2 tampoco se comporta como dice la consigna. El agua clara del Paraná refleja en el azul casi lo mismo que la vegetación (0,014 frente a 0,022) y la turbia del Uruguay refleja más (0,040), así que el agua no aparece oscura. Por eso B2 no sirve para detectar agua, pero sí para distinguir el agua clara de la turbia.
+
+        \begin{figure}[H] \centering
+            \includegraphics{img/ejercicio2/separabilidad_fisher.pdf}
+            \caption{Razón de Fisher entre cada tipo de agua y la cobertura terrestre más parecida, por banda y fecha.}
+            \label{fig:ej2_fisher}
+        \end{figure}
+
+        \newpage
+        En consecuencia, se mantuvieron las bandas de la consigna, pero con otra justificación para la banda 2. Las bandas 5 y 7 son las que separan el agua de la tierra, y la banda 2 aporta la diferencia entre el agua clara y la turbia. La \textbf{Figura \ref{fig:ej2_bandas}} lo muestra sobre las tres zonas. En B2 el Uruguay se ve gris claro y el Paraná gris, mientras que en B5, B6 y B7 el agua queda negra en las tres zonas y su borde es nítido.
+
+        \begin{figure}[H] \centering
+            \includegraphics[width=.7\textwidth]{img/ejercicio2/bandas_zonas.pdf}
+            \caption{Bandas 2, 5, 6 y 7 de las tres zonas el 03/04/2024.}
+            \label{fig:ej2_bandas}
+        \end{figure}
+
+        Con estas bandas se armó la composición RGB con R~=~B2, G~=~B5 y B~=~B7 (\textbf{Figura \ref{fig:ej2_composiciones}}). El agua queda roja, con un tono más claro cuanto más turbia es, sobre una tierra verde o violácea. Este orden de canales y el estiramiento entre los percentiles 2 y 98, común a todas las zonas, fueron los que dieron la mayor diferencia de color entre el agua y la tierra. La composición 5-6-4, que la consigna propone para el análisis de tierra y agua, dio un contraste similar y distingue algo mejor el agua turbia, porque usa la banda roja.
+
+        \begin{figure}[H] \centering
+            \includegraphics[width=.7\textwidth]{img/ejercicio2/composiciones_seleccionadas.pdf}
+            \caption{Composición 2-5-7 de las tres zonas el 03/04/2024.}
+            \label{fig:ej2_composiciones}
+        \end{figure}
+
+    \subsection{Segmentación}
+
+        Para separar el agua se calcularon tres índices, que combinan las bandas que más la distinguen y dan un solo valor por píxel.
+
+        \begin{itemize}
+            \item \textbf{NDWI:} usa el verde (B3) y el NIR (B5). Resalta el agua frente a la vegetación \cite{ej2_mcfeeters}.
+            \item \textbf{MNDWI:} usa el verde (B3) y el SWIR 1 (B6). Reduce la confusión del agua con las zonas urbanas \cite{ej2_xu}.
+            \item \textbf{AWEIsh:} combina las bandas 2, 3, 5, 6 y 7. Busca descartar las sombras, que se ven oscuras como el agua \cite{ej2_feyisa}.
+        \end{itemize}
+
+        En los tres índices el agua da valores positivos y la tierra negativos, por eso en la \textbf{Figura \ref{fig:ej2_indices}} el agua aparece en azul y la tierra en rojo. El NDWI y el MNDWI muestran el agua con un contraste fuerte, mientras que en el AWEIsh queda en un celeste pálido. Se eligió el MNDWI porque es el que más separa el agua de la cobertura más parecida, con una razón de Fisher entre 92,8 y 242,9, y porque le da casi el mismo valor al agua clara del Paraná y a la turbia del Uruguay.
+
+        La ciudad de Posadas queda en rojo en los tres índices, así que no se confunde con el agua. Los arroyos de la zona B, en cambio, casi no se distinguen del entorno, y en la zona C solo aparece en azul la desembocadura de un arroyo cerca de Garuhapé.
+
+        \begin{figure}[H] \centering
+            \includegraphics[width=.75\textwidth]{img/ejercicio2/indices_zonas.pdf}
+            \caption{Índices de agua de las tres zonas el 03/04/2024.}
+            \label{fig:ej2_indices}
+        \end{figure}
+
+    \subsection{Umbralización}
+
+        Se probaron dos umbrales, el valor nominal de 0 y el que calcula el método de Otsu a partir del histograma. Otsu falla cuando el agua ocupa apenas el 2 o 3\,\% del recorte, como en las zonas B y C, porque el mejor corte que encuentra queda entre dos tipos de tierra. Por eso se usó el umbral fijo en 0, que además aplica el mismo criterio en todas las zonas y fechas.
+
+        Para validar la máscara se la comparó con el bit de agua de \texttt{QA\_PIXEL}, que el USGS calcula con su propio algoritmo a partir del NDVI y el NIR \cite{ej2_zhu}. Como hay poca agua, se midió la coincidencia dentro del agua, es decir, sobre los píxeles que alguna de las dos máscaras marca como agua. Con el MNDWI esa coincidencia va de 96 a 99,3\,\% en las tres zonas y las dos fechas.
+
+        En la \textbf{Figura \ref{fig:ej2_umbral}} las dos máscaras se superponen casi por completo, por eso abajo se agregó un detalle de 3,6~km donde se concentran las diferencias. Casi todas están en la orilla y son píxeles mezclados, que son una parte de agua y otra de tierra. En la zona A, un arroyo que desemboca en una bahía aparece como agua solo en el MNDWI, y en la zona C el arroyo de Garuhapé queda cortado en tramos aguas arriba.
+
+        \begin{figure}[H] \centering
+            \includegraphics[width=.7\textwidth]{img/ejercicio2/discrepancias_qa.pdf}
+            \caption{Máscara MNDWI~>~0 comparada con el agua de \texttt{QA\_PIXEL} el 03/04/2024.}
+            \label{fig:ej2_umbral}
+        \end{figure}
+    
+    \vspace{-0.75 cm}
+    \subsection{Identificación de arroyos}
+
+        Para saber si los arroyos se detectan hace falta conocer por dónde pasan, y \texttt{QA\_PIXEL} no sirve para eso porque tiene la misma resolución de 30~m. Por eso se usaron los recorridos de los cursos de agua de OpenStreetMap \cite{ej2_osm}, dibujados sobre imágenes de mayor resolución. Un tramo se tomó como detectado si había agua según el MNDWI a un píxel o menos del recorrido, para tolerar pequeños errores de posición.
+
+        Las tres zonas tienen entre 230 y 255~km de arroyos mapeados, y el MNDWI detecta menos del 4\,\% de ese largo. Solo se detectan los tramos con unos 90~m de agua o más, como el arroyo Garuhapé en su último kilómetro. Aguas arriba, el índice sube un poco justo sobre el cauce pero no llega a 0, porque el píxel tiene unos pocos metros de agua y el resto es monte. Además, el NDVI sobre los recorridos va de 0,75 a 0,87, igual que en la vegetación densa, así que el monte de la orilla tapa el cauce.
+
+        La \textbf{Figura \ref{fig:ej2_arroyos}} muestra los arroyos Chimiray, Tunas y Concepción. En la composición con CLAHE, que resalta los detalles locales, se ven como corredores oscuros que coinciden con los recorridos de OpenStreetMap. El del Tunas es más marcado porque su corredor es más abierto, y en sus últimos 8~km el índice se acerca a 0. El Chimiray corre bajo monte cerrado. En la máscara del MNDWI no aparece agua a lo largo de ninguno de los tres, salvo junto al Uruguay. Del Tunas se detecta entre el 2,3 y el 7,2\,\% del recorrido según la fecha, y del Chimiray menos del 1\,\%. Lo que se ve en la imagen es el corredor de monte y no el agua.
+
+        \begin{figure}[H] \centering
+            \includegraphics[width=.8\textwidth]{img/ejercicio2/arroyos_zona_b.pdf}
+            \caption{Arroyos de la zona B el 03/04/2024, con los recorridos de OpenStreetMap.}
+            \label{fig:ej2_arroyos}
+        \end{figure}
+        
+        \vspace{-0.25 cm}
+        Bajar el umbral no resuelve el problema. Con $-0{,}3$ se detecta el 17\,\% del Tunas, pero en la zona A el agua fuera del río se multiplica por 7,5 porque empieza a entrar la ciudad. En los arroyos el índice queda en el mismo rango que la tierra, así que no hay un umbral que los separe.
+    
+    \vspace{-0.25 cm}
+    \subsection{Comparación entre fechas}
+
+        Se compararon las máscaras del MNDWI de las dos fechas, sobre los píxeles válidos en ambas, midiendo por separado los ríos y el resto del agua.
+
+        El Paraná de la zona A, cuyo nivel regula la represa de Yacyretá, cambió un 0,4\,\% y coincide en un 99,5\,\% entre las dos fechas. El Uruguay creció un 1,5\,\% y el Paraná de la zona C un 2\,\%, y sus anchos medios cambiaron menos de medio píxel. El agua fuera de los rios, en cambio, varió entre un 8 y un 47\,\% y coincide entre fechas solo entre un 59 y un 90\,\%. En las tres zonas hay más agua en junio.
+
+        En la \textbf{Figura \ref{fig:ej2_fechas}} las dos fechas coinciden casi por completo, y entre el 95 y el 100\,\% de las diferencias están en la orilla. Abajo se agregó un detalle de 3,6~km donde más cambia el agua chica. En la zona A, un arroyo que desemboca en una bahía del embalse tiene mucha más agua en junio. En la zona C, el tramo bajo del arroyo Garuhapé, de dos o tres píxeles de ancho, alterna píxeles que son agua solo en una de las fechas.
+
+        \begin{figure}[H] \centering
+            \includegraphics[width=.7\textwidth]{img/ejercicio2/cambios_fechas.pdf}
+            \caption{Cambios en la máscara MNDWI~>~0 entre el 03/04/2024 y el 30/06/2024.}
+            \label{fig:ej2_fechas}
+        \end{figure}
+
+        \vspace{-0.25 cm}
+        Antes de atribuir el aumento a una crecida hay que considerar otros factores. En junio el agua da un MNDWI más alto (1,00 frente a 0,94 en el Paraná), así que un píxel de la orilla supera el umbral con más facilidad y el agua parece crecer aunque el nivel no cambie. También influyen que las escenas sean de satélites distintos y que en invierno el monte de la orilla tenga menos hojas. Sin datos de altura de los ríos ni de lluvias, lo único seguro es que los ríos se mantuvieron estables, y las diferencias en el agua chica pueden deberse al método.
+    
+    \vspace{-0.25 cm}
     \subsection{Conclusiones}
 
-        Acá va la conclusión de este ejercicio \dots
+        Las bandas 5 y 7 son las que separan el agua de la tierra, mientras que la banda 2 no la detecta pero muestra si es clara o turbia. El MNDWI con el umbral en 0 fue el mejor método, con una coincidencia con \texttt{QA\_PIXEL} de entre 96 y 99,3\,\% dentro del agua. La resolución de 30~m alcanza para los ríos y las lagunas, pero no para la mayoría de los arroyos, de los que se detecta menos del 4\,\% del recorrido porque son más angostos que un píxel y el monte los tapa. Para detectarlos harían falta imágenes de mayor resolución. Entre las dos fechas los ríos se mantuvieron estables, podría llegar a utilizarse para detectar cambios si se corrobora el método.
