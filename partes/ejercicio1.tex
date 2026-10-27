@@ -1,11 +1,224 @@
-\graphicspath{{code/ejercicio_1/imagenes/}}
-
+% !TEX root = ../main.tex
 \section{Identificación de áreas urbanas y civiles}
 
-    \subsection{Subtitulo}
+    El objetivo es resaltar las áreas construidas: edificios, rutas e infraestructura civil. Las bandas sugeridas son 4 (rojo), 5 (NIR, infrarrojo cercano) y 6 (SWIR 1, infrarrojo de onda corta).
+    Se busca elegir y justificar una composición RGB que cumpla el objetivo, mejorar el contraste si hace falta y evaluar si la combinación cumple lo solicitado y en qué medida.
 
-        Desarrollar el ejercicio por subsecciones queda prolijo \dots
+    Se usó la escena del 03/04/2024 de la órbita 224/079 (trayectoria y fila del sistema de referencia de Landsat), sin nubes sobre la zona. Es de Landsat 9, con las mismas bandas que Landsat 8, y de nivel 2: un producto procesado por el USGS (Servicio Geológico de los Estados Unidos) que trae la \textbf{reflectancia de superficie}, la fracción de la luz solar que refleja el terreno, ya corregida por la atmósfera. Es adimensional y va de 0 a 1. Se recortó una región de $614 \times 847$ píxeles de 30~m de lado (468~km$^2$) con Posadas, Garupá, Itaembé y Encarnación. El recorte se definió con coordenadas geográficas convertidas a la proyección UTM 21S (Universal Transversa de Mercator, zona 21 sur), el sistema de coordenadas en metros de la escena.
+
+    \subsection{Bandas y composiciones de partida}
+
+        Se presenta la siguiente información sobre las bandas de Landsat 8 (\textbf{Tabla \ref{tab:ej1_bandas}}, donde se agregó en qué coberturas refleja más cada una) y un conjunto de composiciones típicas (\textbf{Tabla \ref{tab:ej1_composiciones}}), que coincide con la lista publicada por Esri (Environmental Systems Research Institute o Instituto de Investigación de Sistemas Ambientales) \cite{ej1_esri_bandas}.
+
+        \begin{table}[!htb] \centering \small \setstretch{1.05}
+            \begin{tblr}{
+                width = \linewidth, colspec = {Q[c] Q[l] Q[c] X[l]},
+                cells = {valign = m}, rowsep = 0.5pt, colsep = 4pt, hlines, vlines,
+                row{1} = {bg = gray!15, font = \bfseries, halign = c}
+            }
+                Banda & Nombre & $\lambda$ ($\mu$m) & Qué resalta \\
+                1 & Costera & 0,435--0,451 & Aerosoles y aguas costeras. \\
+                2 & Azul & 0,452--0,512 & Agua clara; muy afectada por la atmósfera. \\
+                3 & Verde & 0,533--0,590 & Pico de la vegetación en el visible. \\
+                4 & Rojo & 0,636--0,673 & Absorbido por la clorofila: suelo y construcciones quedan claros. \\
+                5 & NIR & 0,851--0,879 & La vegetación sana refleja mucho y el agua casi nada. \\
+                6 & SWIR 1 & 1,566--1,651 & Materiales secos y suelo; el agua de las hojas lo absorbe. \\
+                7 & SWIR 2 & 2,107--2,294 & Como B6, con más absorción del agua. \\
+                8 a 11 & Otras & 0,50--12,51 & Detalle (B8), nubes altas (B9) y temperatura (B10 y B11). \\
+            \end{tblr}
+            \caption{Bandas de Landsat 8. La resolución es de 30~m, salvo B8 (15~m) y B10--B11 (100~m).}
+            \label{tab:ej1_bandas}
+        \end{table}
+
+        \begin{table}[!htb] \centering \small \setstretch{1.05}
+            \begin{tblr}{
+                colspec = {Q[l] Q[c] Q[l] Q[c]}, cells = {valign = m}, rowsep = 0.5pt, colsep = 5pt, hlines, vlines,
+                row{1} = {bg = gray!15, font = \bfseries, halign = c}
+            }
+                Representación & Bandas & Representación & Bandas \\
+                \textbf{Color natural} & \textbf{4 3 2} & Análisis de salud en vegetación & 5 6 2 \\
+                \textbf{Falso color (urbano)} & \textbf{7 6 4} & \textbf{Uso de suelo (tierra/agua)} & \textbf{5 6 4} \\
+                Color infrarrojo (vegetación) & 5 4 3 & Natural con remoción atmosférica & 7 5 3 \\
+                Estudios en agricultura & 6 5 2 & Infrarrojo de onda corta & 7 5 4 \\
+                Penetración atmosférica & 7 6 5 & \textbf{Análisis de vegetación} & \textbf{6 5 4} \\
+            \end{tblr}
+            \caption{Composiciones RGB típicas de Landsat 8. En negrita, las usadas en este ejercicio.}
+            \label{tab:ej1_composiciones}
+        \end{table}
+
+        Se observó que diferentes combinaciones de las mismas bandas, como 6-5-4 (análisis de vegetación) y 5-6-4 (tierra y agua), repercuten en el orden en que se asignan a R, G y B, cambiando el color de cada elemento que recubre al suelo y, en algunos espacios de color, su separabilidad. Por eso se analizaron las seis permutaciones, que forman el grupo principal. En paralelo se analizó la 7-6-4, el \textbf{falso color urbano}. Se la llama \textit{falso color} porque sus canales no representan el rojo, el verde y el azul visibles, sino bandas del infrarrojo de onda corta que el ojo humano no percibe, de modo que los colores de la imagen no corresponden a los reales. Se la eligió para analizar de manera adicional porque se la asocia a lo \textit{urbano}, ya que combina las dos bandas SWIR. En ellas, los materiales secos de la ciudad (hormigón, asfalto, techos) reflejan con intensidad, mientras que la vegetación y el agua absorben. Respecto de la 6-5-4, reemplaza el NIR por el SWIR 2. La 4-3-2, en color natural, quedó como referencia.
+
+        Para medir qué composición separa mejor lo urbano hace falta una referencia que no salga de los colores de la propia imagen, por eso se usó \textbf{OpenStreetMap} (OSM) \cite{ej2_osm}, un mapa libre y colaborativo en el que voluntarios dibujan polígonos y los etiquetan según su uso (residencial, industrial, bosque, agua, etc.), descargado con Overpass, su servicio web de consultas. Acá da las muestras de cada clase para medir la separabilidad y es la referencia para validar las máscaras urbanas.
+
+    \subsection{Firmas espectrales}
+
+        Para saber qué bandas distinguen lo urbano se midió la reflectancia media de cada cobertura en las bandas 1 a 7, sobre nueve zonas de muestra homogéneas (\textbf{Figura \ref{fig:ej1_zonas_firmas}}): el Paraná, el microcentro y un barrio arbolado, una plantación y una pastura, y lotes de suelo descampado. El agua se verificó con \texttt{QA\_PIXEL}, la banda de calidad que el USGS entrega con cada escena y en la que marca, píxel por píxel, nubes, sombras y agua. En el suelo se usaron sólo los píxeles con NDVI menor a 0,3. El NDVI \cite{ej1_rouse} (índice de vegetación de diferencia normalizada), $(B5 - B4)/(B5 + B4)$ con $B_i$ la reflectancia de la banda $i$, compara el NIR, que la vegetación refleja, con el rojo, que absorbe. Es adimensional y va de $-1$ a 1: supera 0,5 en vegetación densa y ronda 0 en suelo y construcciones. La separación entre clases se cuantificó con las métricas de la \textbf{Tabla \ref{tab:ej1_metricas}}, todas adimensionales, que se usan en todo el ejercicio.
+
+        \begin{table}[!htb] \centering \small \setstretch{1.05}
+            \begin{tblr}{
+                width = \linewidth, colspec = {Q[l] X[1.3,l] X[1,l]},
+                cells = {valign = m}, rowsep = 0.5pt, colsep = 4pt, hlines, vlines,
+                row{1} = {bg = gray!15, font = \bfseries, halign = c}
+            }
+                Métrica & Cómo se calcula & Qué indica \\
+                Razón de Fisher \cite{ej1_fisher} & $(\mu_a - \mu_b)^2 / (\sigma_a^2 + \sigma_b^2)$, canal por canal & Mayor a 1: un umbral ya separa; cerca de 0: medias iguales. \\
+                Solapamiento (OVL) & $\sum_k \min\left(p_a(k), p_b(k)\right)$ sobre los histogramas normalizados & Fracción de píxeles que comparten valores: 0 si no se tocan, 1 si son idénticos. \\
+                Silhouette \cite{ej1_rousseeuw} & $(b - a)/\max(a, b)$; $a$ y $b$: distancias medias a la propia clase y a la otra & Cerca de 1: grupos apartados; cerca de 0: superpuestos. Supone grupos esféricos. \\
+                Jeffries--Matusita (JM) \cite{ej1_richards} & $2\,(1 - e^{-B})$; $B$: distancia de Bhattacharyya (superposición) entre las gaussianas de covarianza completa de cada clase & De 0 (idénticas) a 2 (separación perfecta); sobre 1,9, muy buena. Admite nubes alargadas. \\
+                Exactitud k-NN & Aciertos, promediados por clase, de un clasificador por mayoría de los 5 vecinos más cercanos & De 0,5 (azar) a 1 (perfecta). No supone forma. \\
+                Puesto promedio & Promedio de los puestos en las cinco métricas anteriores (Borda) & Menor es mejor; ninguna métrica decide sola. \\
+            \end{tblr}
+            \caption{Métricas de separabilidad entre dos clases.}
+            \label{tab:ej1_metricas}
+        \end{table}
+
+        \begin{figure}[!htb] \centering
+            \includegraphics[width=.8\linewidth]{img/ejercicio1/zonas_firmas.pdf}
+            \caption{Zonas de muestra y firmas espectrales de cada cobertura.}
+            \label{fig:ej1_zonas_firmas}
+        \end{figure}
+
+        \begin{table}[!htb] \centering \small \setstretch{1.05}
+            \begin{tblr}{
+                colspec = {Q[c] Q[l] Q[c] Q[c] Q[c] Q[c] Q[c] Q[c] Q[c] Q[c]},
+                cells = {valign = m}, rowsep = 0.5pt, colsep = 3.5pt, hlines, vlines,
+                row{1,2} = {bg = gray!15, font = \bfseries, halign = c}
+            }
+                \SetCell[r=2]{c} Banda & \SetCell[r=2]{c} Nombre & \SetCell[c=4]{c} Reflectancia media & & & & \SetCell[c=2]{c} Urbano--vegetación & & \SetCell[c=2]{c} Fisher urbano-- & \\
+                & & Agua & Urbano & Veget. & Suelo & Fisher & OVL & suelo & agua \\
+                B1 & Costera & 0,002 & 0,044 & 0,015 & 0,032 & 1,42 & 0,30 & 0,25 & 3,3 \\
+                B2 & Azul & 0,012 & 0,056 & 0,023 & 0,039 & 1,46 & 0,30 & 0,40 & 3,1 \\
+                B3 & Verde & 0,032 & 0,085 & 0,054 & 0,068 & 0,81 & 0,57 & 0,32 & 3,9 \\
+                B4 & Rojo & 0,009 & 0,094 & 0,042 & 0,108 & 1,69 & 0,33 & 0,13 & 6,2 \\
+                B5 & NIR & 0,000 & 0,211 & 0,307 & 0,159 & 2,00 & 0,34 & 0,79 & 20,8 \\
+                B6 & SWIR 1 & 0,001 & 0,189 & 0,158 & 0,174 & 0,23 & 0,65 & 0,07 & 26,7 \\
+                B7 & SWIR 2 & 0,001 & 0,145 & 0,070 & 0,134 & 2,12 & 0,24 & 0,05 & 12,1 \\
+            \end{tblr}
+            \caption{Reflectancia media (adimensional) de cada clase y separabilidad de lo urbano, banda por banda.}
+            \label{tab:ej1_firmas}
+        \end{table}
+
+        Lo urbano es la cobertura más brillante del visible y la que más refleja en el SWIR 2, por sus materiales secos, y en el NIR refleja menos que la vegetación (0,211 contra 0,307) (\textbf{Tabla \ref{tab:ej1_firmas}}). Contra la vegetación, las mejores bandas son B7 (Fisher 2,12), B5 (2,00) y B4 (1,69), mientras que B6 casi no separa (0,23). Contra el agua separan todas las infrarrojas (Fisher de 12,1 a 26,7). El suelo descampado es el problema: refleja como lo urbano y sólo el NIR lo distingue algo (0,79). Las bandas sugeridas se complementan, B4 y B5 contra la vegetación y B5 y B6 contra el agua, y B7 resultó la mejor banda individual, lo que anticipa el buen desempeño de la 7-6-4.
+
+    \subsection{Composiciones y mejora de contraste}
+
+        Se armaron las ocho composiciones (\textbf{Figura \ref{fig:ej1_composiciones}}) con un estiramiento lineal entre los percentiles 2 y 98 de cada banda: $v' = 255\,(v - P_2)/(P_{98} - P_2)$, donde $v$ es la reflectancia, $P_2$ y $P_{98}$ los valores que dejan por debajo al 2 y al 98\,\% de los píxeles, y $v'$ el nivel de gris resultante, de 0 a 255. Se sacrifica el 4\,\% de valores extremos para aprovechar todo el rango de grises. En las composiciones con SWIR se reconocen la ciudad, el aeropuerto y las rutas, y el agua queda negra. Lo urbano se ve lila en la 6-5-4, verde-amarillo en la 6-4-5 y blanco en la 7-6-4, donde el contraste es más marcado. En color natural, en cambio, el Paraná con sedimentos se parece a lo construido. Aunque composiciones como la 5-4-6 aparentan un alto grado de separabilidad a simple vista debido a la sensibilidad de contraste del sistema visual humano, esto no siempre implica una distinción matemática real. Por lo tanto, la selección final se fundamentó estrictamente en métricas analíticas que cuantifican la separabilidad espectral de manera objetiva.
+
+        \begin{figure}[!htb] \centering
+            \includegraphics[width=.8\linewidth]{img/ejercicio1/composiciones.pdf}
+            \caption{Composiciones RGB con estiramiento entre los percentiles 2 y 98.}
+            \label{fig:ej1_composiciones}
+        \end{figure}
+
+        También se compararon cuatro técnicas de mejora de contraste: sin realce (escalado del mínimo al máximo), estiramiento, ecualización global, que usa el histograma acumulado para repartir los niveles de forma uniforme, y CLAHE \cite{ej1_zuiderveld} (ecualización adaptativa de histograma con contraste limitado), una ecualización por bloques aplicada sólo a la luminosidad para no alterar los colores. El contraste se midió sobre la luminosidad con el \textbf{contraste RMS}, el desvío estándar de los niveles de gris, de 0 a 255 (más alto indica más rango aprovechado), y con la \textbf{entropía}, $-\sum_i p_i \log_2 p_i$ con $p_i$ la fracción de píxeles en el nivel $i$, que mide cuán repartidos están los niveles (como máximo, 8~bits). En la 6-5-4, sin realce el contraste RMS es de 37 niveles de gris y la entropía de 5,8~bits, porque unos pocos píxeles muy brillantes comprimen el resto. El estiramiento los lleva a 74 niveles y 6,7~bits, la ecualización a 61 niveles y 7,6~bits, con colores poco naturales, y CLAHE a 73 niveles y 7,5~bits, realzando calles y bordes de barrio. CLAHE es la mejor opción para mirar la imagen, pero, como se verá, ningún realce mejora la separación.
+
+    \subsection{Separabilidad entre espacios de color}
+
+        Para medir con miles de píxeles se rasterizaron los polígonos de OSM, es decir, se pasaron a la grilla de píxeles de la imagen, en tres clases (urbano, vegetación y agua), que cubren el 81\,\% del recorte. Se usaron sólo los píxeles puros: cada clase se erosionó 2 píxeles (60~m), una operación morfológica que achica las regiones desde el borde, para descartar los píxeles que mezclan coberturas. Además, la imagen se dividió en bloques de $64 \times 64$ píxeles alternados como un tablero de ajedrez: los umbrales se ajustan en unos bloques y se evalúan en los otros, porque píxeles vecinos casi idénticos inflarían los resultados.
+
+        Cada composición se llevó a cinco espacios de color: RGB; HSV, que describe el color por su matiz ($H$), saturación ($S$) y valor o brillo ($V$); HLS, igual pero con luminosidad ($L$) en lugar de valor; escala de grises, y CIE $L^*a^*b^*$ (LAB), con luminosidad $L^*$, eje verde--magenta $a^*$ y eje azul--amarillo $b^*$. Todos los canales se expresan en niveles adimensionales de 0 a 255 (8 bits). Como $H$ es un ángulo, se lo reemplazó por $(\cos H, \sin H)$. Se midió la separación entre lo urbano y la vegetación, el par difícil, sobre 1.500 píxeles puros por clase (\textbf{Tabla \ref{tab:ej1_separabilidad}}). A Fisher, OVL y Silhouette se sumaron JM y k-NN, porque las nubes de puntos de cada clase son alargadas y las métricas basadas en la distancia euclídea subestiman su separación.
+
+        \begin{table}[!htb] \centering \small \setstretch{1.05}
+            \begin{tblr}{
+                colspec = {Q[c] Q[c] Q[c] Q[c] Q[c] Q[c] Q[c] Q[c] Q[c] Q[c]},
+                cells = {valign = m}, rowsep = 0.5pt, colsep = 3.5pt, hlines, vlines,
+                row{1} = {bg = gray!15, font = \bfseries}
+            }
+                Puesto & Composición & Espacio & Fisher $\uparrow$ & OVL $\downarrow$ & Silhouette $\uparrow$ & JM $\uparrow$ & k-NN $\uparrow$ & JM agua $\uparrow$ & Promedio $\downarrow$ \\
+                1 & 7-6-4 & HSV & 0,473 & 0,592 & 0,152 & 1,41 & 0,792 & 2,00 & 5,6 \\
+                2 & 4-3-2 & RGB & 0,738 & 0,551 & 0,184 & 0,78 & 0,792 & 1,51 & 5,8 \\
+                3 & 7-6-4 & RGB & 0,610 & 0,578 & 0,165 & 0,93 & 0,796 & 2,00 & 6,0 \\
+                4 & 7-6-4 & LAB & 0,546 & 0,589 & 0,179 & 0,96 & 0,789 & 2,00 & 6,6 \\
+                6 & 6-4-5 & LAB & 0,700 & 0,525 & 0,198 & 0,75 & 0,745 & 2,00 & 12,2 \\
+                23 a 28 & Las 6 de 6-5-4 & RGB & 0,417 & 0,640 & 0,133 & 0,74 & 0,751 & 2,00 & 20,6 a 21,6 \\
+                40 & 6-5-4 & Gris & 0,002 & 0,820 & 0,015 & 0,02 & 0,539 & 2,00 & 40,0 \\
+            \end{tblr}
+            \caption{Separabilidad entre lo urbano y la vegetación de una selección de las 40 configuraciones. $\uparrow$: mayor es mejor; $\downarrow$: menor es mejor.}
+            \label{tab:ej1_separabilidad}
+        \end{table}
+
+        \begin{itemize}
+            \item \textbf{En RGB, las seis permutaciones dan las mismas métricas}: permutar bandas sólo reordena los ejes. El orden importa en los espacios no lineales, donde gana la 6-4-5 en LAB.
+            \item \textbf{La escala de grises es el peor espacio}: la 6-5-4 en gris llega a un k-NN de 0,539, casi el azar.
+            \item \textbf{La 7-6-4 ocupa cuatro de los cinco primeros puestos}, con el k-NN (0,796) y el JM (1,41) más altos.
+            \item \textbf{La 4-3-2 compite contra la vegetación, pero confunde lo urbano con el agua}: su JM urbano--agua es 1,51, contra 2,00 con SWIR.
+        \end{itemize}
+
+        Ninguna configuración supera un k-NN de 0,80, porque a 30~m un píxel de un barrio arbolado mezcla techo, calle y copa. Los histogramas por clase confirman que aun en el mejor canal ($a^*$ de la 6-4-5, OVL 0,463) se comparte el 46\,\% de la distribución, y en 3D las nubes urbana y de vegetación son alargadas a lo largo del brillo y se tocan en los barrios arbolados. Al repetir la evaluación con los realces, el k-NN mejoró como mucho 0,026 y el JM bajó en todos los casos: los realces redistribuyen los niveles, pero no crean información. Se eligieron como configuración principal la 6-4-5 en LAB con ecualización (k-NN 0,757) y como secundaria la 7-6-4 en RGB con estiramiento (0,796).
+
+    \subsection{Segmentación y validación}
+
+        Sobre las dos configuraciones se generaron máscaras urbanas con dos familias de métodos:
+
+        \begin{itemize}
+            \item \textbf{Umbralización:} Otsu \cite{ej1_otsu} sobre el mejor canal, que elige el umbral que maximiza la varianza entre los dos grupos del histograma y el índice de construcción NDBI $= (B6 - B5)/(B6 + B5) > 0$ \cite{ej1_zha}, adimensional como el NDVI.
+            \item \textbf{Agrupamiento sin etiquetas} con los tres canales: K-Means, que supone grupos esféricos, y una mezcla de gaussianas (GMM) con covarianza completa, que admite grupos alargados. El número de grupos del GMM se eligió con el criterio BIC \cite{ej1_schwarz}, que premia el ajuste y penaliza la cantidad de parámetros. Se tomaron como urbanos los grupos con más de la mitad de sus píxeles en lo urbano de OSM.
+        \end{itemize}
+
+        Cada máscara se comparó con OSM en los bloques de prueba (\textbf{Tabla \ref{tab:ej1_validacion}}). Si VP son los píxeles urbanos para ambos, FP los que sólo marca la máscara y FN los urbanos no detectados, el \textbf{IoU}, $\mathrm{VP}/(\mathrm{VP} + \mathrm{FP} + \mathrm{FN})$, mide la superposición (1 si coinciden, 0 si nada); la \textbf{precisión}, $\mathrm{VP}/(\mathrm{VP} + \mathrm{FP})$, qué parte de lo marcado es urbano (baja si se marca campo); el \textbf{recall}, $\mathrm{VP}/(\mathrm{VP} + \mathrm{FN})$, qué parte de lo urbano se encontró (bajo si se pierden barrios), y el \textbf{F1} es la media armónica de ambas. Las cuatro son adimensionales y van de 0 a 1. También se midió el área urbana sobre todo el recorte: OSM marca 139,9~km$^2$.
+
+        \begin{table}[!htb] \centering \footnotesize \setstretch{1.05}
+            \begin{tblr}{
+                colspec = {Q[l] Q[c] Q[c] Q[c] Q[c] Q[c] Q[c] Q[c]},
+                cells = {valign = m}, rowsep = 0.5pt, colsep = 4pt, hlines, vlines,
+                row{1} = {bg = gray!15, font = \bfseries, halign = c}
+            }
+                Método & Composición & IoU $\uparrow$ & F1 $\uparrow$ & Precisión $\uparrow$ & Recall $\uparrow$ & Área (km$^2$) & Coincide (km$^2$) $\uparrow$ \\
+                GMM & 7-6-4 RGB & 0,618 & 0,764 & 0,783 & 0,746 & 155,9 & 106,3 \\
+                Caja P5--P95 & 7-6-4 RGB & 0,571 & 0,727 & 0,591 & 0,945 & 289,0 & 133,0 \\
+                K-Means & 7-6-4 RGB & 0,565 & 0,722 & 0,614 & 0,875 & 258,2 & 123,7 \\
+                GMM & 6-4-5 LAB & 0,555 & 0,714 & 0,735 & 0,694 & 150,2 & 98,2 \\
+                Caja manual & 6-4-5 LAB & 0,540 & 0,701 & 0,745 & 0,662 & 150,5 & 93,8 \\
+                K-Means & 6-4-5 RGB & 0,526 & 0,689 & 0,825 & 0,591 & 113,4 & 83,6 \\
+                Otsu & 7-6-4 HSV & 0,525 & 0,689 & 0,687 & 0,691 & 160,9 & 97,7 \\
+                Caja P5--P95 & 6-4-5 LAB & 0,521 & 0,685 & 0,556 & 0,892 & 290,3 & 125,8 \\
+                K-Means & 6-4-5 LAB & 0,495 & 0,662 & 0,761 & 0,586 & 117,0 & 83,0 \\
+                Otsu & 6-4-5 LAB & 0,428 & 0,599 & 0,553 & 0,653 & 177,2 & 92,4 \\
+                NDBI $> 0$ & reflectancias & 0,090 & 0,164 & 0,202 & 0,139 & 96,8 & 19,1 \\
+            \end{tblr}
+            \caption{Máscaras urbanas contra OSM: métricas en los bloques de prueba y área sobre todo el recorte.}
+            \label{tab:ej1_validacion}
+        \end{table}
+
+        \begin{itemize}
+            \item \textbf{El GMM sobre la 7-6-4 es el mejor método} (IoU 0,618, F1 0,764): estima 156~km$^2$ y encuentra el 76\,\% de la mancha urbana de OSM. K-Means llega a 0,565 porque corta las nubes alargadas en ``rodajas'' de brillo.
+            \item \textbf{Las cajas automáticas encuentran casi toda la ciudad} (recall de 0,89 a 0,95), pero también suelo y pasturas secas (precisión de 0,56 a 0,59), y duplican el área.
+            \item \textbf{La caja manual y el GMM sobre la 6-4-5 dan el total más parecido a OSM} (150~km$^2$), pero coinciden en menos superficie (94 y 98~km$^2$). Un primer ajuste manual hecho sólo mirando la imagen, con $a^*$ alto, había dado una máscara vacía.
+            \item \textbf{Otsu y el NDBI rinden poco.} Otsu supone dos picos en el histograma y hay tres clases. Lo urbano de Posadas, muy arbolado, tiene NDBI negativo, y el agua da cerca de $+1$.
+        \end{itemize}
+
+        \begin{figure}[!htb] \centering
+            \includegraphics[width=.8\linewidth]{img/ejercicio1/mapa_errores.pdf}
+            \caption{Aciertos y errores contra OSM del mejor método y de la caja manual.}
+            \label{fig:ej1_mapa_errores}
+        \end{figure}
+
+        En el mapa de errores (\textbf{Figura \ref{fig:ej1_mapa_errores}}) muchos falsos positivos son rutas, como la Ruta Nacional~12, que OSM no cuenta como uso urbano aunque son infraestructura civil. Los falsos negativos se concentran en Encarnación y en los barrios más arbolados, donde el píxel de 30~m es mayormente copa de árbol.
+
+    \subsection{Pipeline propuesto}
+
+        La \textbf{Figura \ref{fig:ej1_pipeline}} resume el procedimiento: parte de las reflectancias y de una referencia independiente (OSM), elige las bandas con las firmas espectrales, compara composiciones, espacios de color y realces con métricas de separabilidad, segmenta las configuraciones ganadoras y valida cada máscara en bloques que no se usaron para ajustarla.
+
+        \begin{figure}[!htb] \centering
+            \includegraphics[width=.4\linewidth]{img/ejercicio1/pipeline.pdf}
+            \caption{Pipeline propuesto para la identificación de áreas urbanas.}
+            \label{fig:ej1_pipeline}
+        \end{figure}
 
     \subsection{Conclusiones}
 
-        Acá va la conclusión de este ejercicio \dots
+        Las bandas sugeridas (4, 5 y 6) cumplen el objetivo en parte: separan perfectamente el agua (JM de 2,00, contra 1,51 del color natural) y distinguen lo construido de la vegetación con una exactitud de 0,75. En RGB su orden sólo cambia los colores; la mejor variante fue la 6-4-5 en LAB, donde el GMM y la caja manual alcanzan un IoU de 0,555 y 0,540 y estiman 150~km$^2$ urbanos, cerca de los 140~km$^2$  de OSM.
+
+        La secundaria 7-6-4 rindió mejor: su GMM fue el mejor método (IoU 0,618, F1 0,764) y encuentra el 76\,\% de la mancha urbana. La diferencia es el SWIR 2, la mejor banda individual contra la vegetación (Fisher 2,12): separa los materiales secos de la vegetación húmeda, mientras que el NIR responde a las copas de los árboles que abundan en los barrios de Posadas. Por eso conviene sumar la banda 7 a las sugeridas. La mejora de contraste es imprescindible para ver la imagen, pero no agrega separabilidad.
+
+        El límite principal es la resolución, 30~m alcanzan para la mancha urbana, los grandes equipamientos y las rutas principales, pero no para calles angostas ni viviendas, y los píxeles mezclados y el suelo desnudo, que refleja como lo urbano, limitan todos los métodos. La banda pancromática de 15~m o la textura del vecindario podrían mejorar el resultado.
+
+    \subsection{Avances futuros}
+
+        Queda pendiente la clasificación supervisada con aprendizaje automático, que podría usar toda la información espectral a la vez:
+
+        \begin{itemize}
+            \item \textbf{Datos y variables de entrada:} una fila por píxel puro de OSM, balanceada por clase, con las reflectancias de las bandas 1 a 7; los índices NDVI, NDBI y MNDWI, este último un índice de agua, $(B3 - B6)/(B3 + B6)$; los canales de color de las configuraciones ganadoras ($L^*$, $a^*$ y $b^*$ de la 6-4-5, R, G y B de la 7-6-4, y $S \cos H$, $S \sin H$ y $V$), y la textura del vecindario, como la media y el desvío en ventanas de $5 \times 5$ píxeles.
+            \item \textbf{Variables de OSM:} la clase a predecir (urbano, vegetación o agua), la pureza del píxel y su bloque de entrenamiento o prueba. Otras, como la distancia a rutas, no deberían ser entradas: el modelo copiaría a OSM.
+            \item \textbf{Modelos y evaluación:} Random Forest (árboles de decisión), una máquina de vectores de soporte (SVM) y una red neuronal multicapa (MLP), evaluados como en la \textbf{Tabla \ref{tab:ej1_validacion}}.
+        \end{itemize}
