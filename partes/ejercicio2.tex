@@ -1,7 +1,18 @@
 % !TEX root = ../main.tex
 \section{Ejercicio 2}
 
-    Se tienen dos imágenes del satélite Sentinel-2 de una zona del norte de Misiones, una anterior y otra posterior al paso de un tornado. La zona incluye parte de un área urbana y una porción extensa de una reserva. Se busca mostrar el área afectada de forma que la entienda un público no experto y estimar su superficie, separando la reserva del área urbana. El procesamiento completo se encuentra en el notebook del anexo.
+    Se tienen dos imágenes del satélite Sentinel-2 de una zona del norte de Misiones, una anterior y otra posterior al paso de un tornado. La zona incluye parte de un área urbana y una porción extensa de una reserva. Se busca mostrar el área afectada de forma que la entienda un público no experto y estimar su superficie, separando la reserva del área urbana. El procesamiento completo se encuentra en el notebook del anexo. El pipeline tiene ocho etapas, que se desarrollan en las secciones siguientes.
+
+    \begin{enumerate}
+        \item Lectura de las bandas y paso a reflectancia.
+        \item Marcado de áreas de muestra sobre la imagen.
+        \item Ajuste de color entre fechas y composición en color natural (punto a).
+        \item Elección de bandas e índice con las muestras.
+        \item Diferencia del índice entre las dos fechas.
+        \item Umbral y limpieza de la máscara del área afectada.
+        \item Separación por zonas y cálculo de la superficie (punto b).
+        \item Mapa del área afectada sobre la imagen del punto a.
+    \end{enumerate}
 
     \subsection{Datos y preprocesamiento}
 
@@ -25,7 +36,7 @@
 
         Para un público no experto se eligió el color natural, que combina las bandas 4 (rojo), 3 (verde) y 2 (azul) y muestra la zona como se vería desde el aire. Además son bandas de 10~m, las de mayor detalle.
 
-        Entre las dos fechas cambió la atmósfera, y en el monte sin daño el azul es un 36\,\% más alto en la imagen posterior. Para que la diferencia de color se deba solo al daño, cada banda de la imagen posterior se multiplicó por un factor que iguala el monte sin daño de las dos fechas (1,006 en el rojo, 0,930 en el verde y 0,736 en el azul). Después se aplicó a las dos imágenes el mismo estiramiento lineal entre los percentiles 2 y 98 de la imagen anterior, que descarta el 2\,\% de cada extremo. Así un mismo color representa lo mismo en las dos fechas. No se usó ecualización, porque cambia los colores y la imagen deja de ser fiel.
+        Entre las dos fechas cambió la atmósfera, y en el monte sin daño el azul es un 36\,\% más alto en la imagen posterior. Para que la diferencia de color se deba solo al daño, cada banda de la imagen posterior se multiplicó por un factor que iguala el monte sin daño de las dos fechas (1,006 en el rojo, 0,930 en el verde y 0,736 en el azul). Después se aplicó a las dos imágenes el mismo estiramiento lineal entre los percentiles 2 y 98 de la imagen anterior, que descarta el 2\,\% de cada extremo. Así un mismo color representa lo mismo en las dos fechas. No se usó ecualización, porque cambia los colores.
 
         En la imagen posterior el monte dañado se ve como una franja gris de unos 22~km (\textbf{Figura \ref{fig:ej2_antes_despues}}).
 
@@ -47,9 +58,9 @@
 
         Esto pasa cuando se rompen las copas de los árboles. Quedan menos hojas verdes y a la vista quedan ramas, troncos y hojas secas, que reflejan más en el rojo y en el SWIR. El humo o la neblina casi no cambiarían el SWIR~2, así que la franja es daño en el monte.
 
-        Para elegir con qué medir el daño se usó la razón de Fisher \cite{ej2_fisher} entre las muestras afectadas y sin daño (\textbf{Figura \ref{fig:ej2_separabilidad}}). Se probaron las bandas solas, los índices NDVI, NDMI y NBR y dos canales de color de la imagen natural. Cada uno se probó con la diferencia entre las dos fechas y con la imagen posterior sola.
+        Para elegir con qué medir el daño se usó la razón de Fisher entre las muestras afectadas y sin daño (\textbf{Figura \ref{fig:ej2_separabilidad}}). Se probaron las bandas solas, los índices NDVI, NDMI y NBR y dos canales de espacios de color de la imagen natural, la saturación de HSV y la luminosidad de Lab. Cada uno se probó con la diferencia entre las dos fechas y con la imagen posterior sola.
 
-        \begin{figure}[H] \centering
+        \begin{figure}[!htb] \centering
             \includegraphics{img/ejercicio_2/separabilidad.pdf}
             \caption{Razón de Fisher entre el monte afectado y el monte sin daño.}
             \label{fig:ej2_separabilidad}
@@ -57,23 +68,23 @@
 
         El que más separa es la diferencia del NBR entre las dos fechas, llamada dNBR \cite{ej2_key}, con una razón de Fisher de 18,8. El NBR combina el NIR, que baja con el daño, y el SWIR~2, que sube, por eso separa mejor que una banda sola. Además, como es un índice normalizado, casi no cambia con la iluminación.
 
-        Usar las dos fechas separa el doble que usar solo la imagen posterior, porque descuenta lo que ya era distinto antes del tornado. Con la imagen posterior sola el monte dañado se llega a confundir con las chacras. Los canales de color separan mucho menos porque solo tienen información del visible, y el azul además cambia entre fechas por la atmósfera.
+        Usar las dos fechas separa el doble que usar solo la imagen posterior, porque descuenta lo que ya era distinto antes del tornado. Con la imagen posterior sola el monte dañado se llega a confundir con las chacras. Los canales de HSV y Lab separan unas cinco veces menos, con una razón de Fisher de 3,5 y 3,3, porque solo tienen información del visible. Por eso no se usaron espacios de color para medir el daño, y tampoco las bandas visibles, ya que el azul además cambia entre fechas por la atmósfera.
 
     \subsection{Composiciones de los puntos a y b}
 
-        Las composiciones son distintas. Para el punto a se usa el color natural, porque lo tiene que entender cualquier persona. Para el punto b no se usa una composición sino el dNBR, porque las bandas que mejor muestran el daño, el NIR y el SWIR, no se ven a simple vista.
+        Las composiciones son distintas. Para el punto a se usa el color natural en RGB, con un estiramiento lineal en cada banda, porque lo tiene que entender cualquier persona. Para el punto b no se usa una composición sino el dNBR, porque las bandas que mejor muestran el daño, el NIR y el SWIR, no se ven a simple vista.
 
         La \textbf{Figura \ref{fig:ej2_composiciones}} muestra también la composición 12-8A-4, armada con esas bandas. En ella el daño resalta en rosado mucho más que en color natural.
 
-        \begin{figure}[!htb] \centering
-            \includegraphics{img/ejercicio_2/composiciones.pdf}
+        \begin{figure}[H] \centering
+            \includegraphics[width=0.85\textwidth]{img/ejercicio_2/composiciones.pdf}
             \caption{Imagen posterior en color natural, en falso color 12-8A-4 y dNBR.}
             \label{fig:ej2_composiciones}
         \end{figure}
 
     \subsection{Detección de cambios y umbral}
 
-        Para decidir qué píxeles están afectados se buscó un umbral sobre el dNBR. Se probaron tres umbrales, el de Otsu, que es automático \cite{ej2_otsu}, el que queda tres desvíos por debajo de lo que no cambió y el que menos se equivoca con las muestras.
+        Para decidir qué píxeles están afectados se buscó un umbral sobre el dNBR. Se probaron tres umbrales, el de Otsu, que es automático, el que queda tres desvíos por debajo de lo que no cambió y el que menos se equivoca con las muestras.
 
         El histograma tiene un pico en 0, que es lo que no cambió, y una meseta hacia los valores negativos, que es el monte dañado (\textbf{Figura \ref{fig:ej2_histograma}}). Se eligió el umbral de Otsu ($-0{,}108$), porque cae justo donde termina el pico y empieza la meseta, y porque el borde que marca coincide con la franja gris que se ve en la imagen. Los otros dos umbrales marcan también el daño leve de los bordes, y se usaron para la cota de error.
 
@@ -83,9 +94,9 @@
             \label{fig:ej2_histograma}
         \end{figure}
 
-        Después se limpió la máscara con operaciones morfológicas. Se borraron los píxeles sueltos y las manchas chicas, y se dejó solo la traza del tornado. Así quedaron afuera los cambios en chacras alejadas, que pueden ser por cosecha o por preparación del suelo.
+        Después se limpió la máscara con operaciones morfológicas. Se borraron los píxeles sueltos y las manchas chicas, y se dejó solo la traza del tornado. Así quedaron afuera los cambios en chacras alejadas, que pudieron haber cambiado por otros motivos. Los más fuertes están al noreste del final de la traza, en las chacras cerca de un caserío del lado brasileño. Siguen el contorno de los lotes y están separados de la traza por unos 2~km de monte sin cambios, así que corresponden a trabajos agrícolas y no al tornado.
 
-        Para validar se usaron los rectángulos guardados (\textbf{Tabla \ref{tab:ej2_umbrales}}). Con Otsu se detecta el 95,7\,\% del monte afectado y no se marca nada del monte sin daño.
+        Para validar se usaron los rectángulos guardados (\textbf{Tabla \ref{tab:ej2_umbrales}}). Con Otsu se detecta el 95,7\,\% del monte afectado y no se marca nada del monte sin daño. Los rectángulos están en el centro de la traza o lejos de ella, donde el daño es claro, y por eso los tres umbrales dan resultados parecidos. Los umbrales se diferencian en los bordes de la traza y en las chacras, donde no hay muestras, así que la tabla no sirve para elegir entre ellos. Por eso la elección se hizo con el histograma y con la imagen.
 
         \begingroup \setstretch{1.1}
         \begin{table}[!htb] \centering
@@ -105,11 +116,13 @@
 
     \subsection{Superficie afectada}
 
-        Para separar la reserva del área urbana se usaron tres zonas. Como no se tiene el límite oficial de la reserva, se tomó como reserva la mancha continua de monte. El área urbana se tomó de OpenStreetMap \cite{ej2_osm}, con Tobuna, Cruce Caballero y la comunidad Kurupayty. El resto es zona rural, sobre todo chacras.
+        Para separar la reserva del área urbana se usaron tres zonas. Como no se tiene el límite oficial de la reserva, se tomó como reserva la mancha continua de monte. El resto de lo que no es reserva ni área urbana es zona rural, sobre todo chacras.
+
+        Para el área urbana se usó OpenStreetMap \cite{ej2_osm}, un mapa libre y colaborativo en el que voluntarios dibujan calles, edificios y barrios y los etiquetan según su uso. Sus datos se pueden descargar con una consulta por internet. Se descargaron los contornos de Tobuna, de Cruce Caballero y de la comunidad Kurupayty, y se pasaron a la grilla de la imagen para saber qué píxeles caen dentro de cada uno. Se usó solo para ubicar las áreas urbanas y poner sus nombres en el mapa, no para detectar el daño. Tiene la ventaja de no depender de la imagen, aunque los contornos los dibujan voluntarios y pueden no ser exactos.
 
         Para calcular el área se contaron los píxeles afectados y se multiplicaron por el área de un píxel, unos 100,6~m$^2$. Como la imagen está en grados, el área del píxel cambia un poco con la latitud y se calculó fila por fila.
 
-        La superficie afectada es de 19,3~km$^2$, y casi toda está dentro de la reserva (\textbf{Tabla \ref{tab:ej2_areas}}). Ningún píxel afectado cae en las áreas urbanas. Tobuna queda a 4,6~km de la traza y Cruce Caballero a 860~m, pero la comunidad Kurupayty queda a solo 14~m de su borde. La traza mide unos 22~km de largo y unos 890~m de ancho medio.
+        La superficie afectada es de 19,3~km$^2$, y casi toda está dentro de la reserva (\textbf{Tabla \ref{tab:ej2_areas}}). Ningún píxel afectado cae en las áreas urbanas. La traza mide unos 22~km de largo y unos 890~m de ancho medio.
 
         \begingroup \setstretch{1.1}
         \begin{table}[H] \centering
@@ -128,13 +141,14 @@
         \end{table}
         \endgroup
 
-        Separar la reserva del área urbana tiene sentido porque el daño es distinto. El dNBR mide daño en la vegetación, y en una ciudad el daño está en techos y construcciones, que con píxeles de 10~m no se distinguen. En este caso el tornado no llegó a las áreas urbanas.
+        \vspace{-0.5 cm}
+        Separar la reserva del área urbana tiene sentido porque el daño es distinto. El dNBR mide daño en la vegetación, y en una ciudad el daño está en techos y construcciones, que con píxeles de 10~m no se distinguen. Por eso el 0 del área urbana no sale del índice, sino de la ubicación de la traza, que pasa a 860~m de Cruce Caballero y a 4,6~km de Tobuna. La comunidad Kurupayty, en cambio, queda a solo 14~m del borde, si bien con la imagen no se puede corroborar, seguramente haya sufrido daños.
 
     \subsection{Mapa del área afectada}
 
         La \textbf{Figura \ref{fig:ej2_mapa}} muestra el área afectada sobre la imagen posterior en color natural, la misma del punto a. Incluye el límite estimado de la reserva, las áreas urbanas con sus nombres, la escala, el norte y las coordenadas.
 
-        \begin{figure}[H] \centering
+        \begin{figure}[!htb] \centering
             \includegraphics{img/ejercicio_2/mapa_afectado.pdf}
             \caption{Área afectada por el tornado.}
             \label{fig:ej2_mapa}
