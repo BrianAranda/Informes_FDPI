@@ -1,4 +1,4 @@
-Se dispone de dos adquisiciones del satélite Sentinel-2 (bandas B1 a B12) de la misma región del norte de Misiones, que incluye parte de una ciudad y una porción extensa de una reserva natural, con fechas 03-09-2026 (previa) y 19-09-2026 (posterior). Entre ambas fechas se tiene constancia del paso de un tornado por la zona.
+Se dispone de dos adquisiciones del satélite Sentinel-2 (bandas B1 a B12) de la misma región del norte de Misiones, que incluye parte de una ciudad y una porción extensa de una reserva natural, con fechas 03-09-2026 (previa) y 16-09-2026 (posterior). Entre ambas fechas se tiene constancia del paso de un tornado por la zona.
 
 Como ingeniero a cargo del análisis, diseñe un pipeline de procesamiento digital de imágenes que permita:
 

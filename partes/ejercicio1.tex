@@ -1,3 +1,107 @@
 \section{Ejercicio 1}
 
-    Acá se desarrolla el ejercicio ...
+    \subsection{Cálculo de la distancia hiperfocal}
+
+        Sabiendo que la expresión de la distancia hiperfocal es:
+        \begin{equation}
+            H = \dfrac{F^2}{f \cdot d}
+            \label{eq:hiperfocal}
+        \end{equation}
+
+        Y teniendo en cuenta que la consigna establece los siguientes valores:
+
+        \begin{itemize}
+            \item Distancia del lente $F= 4\:mm$.
+            \item Círculo de confusión admisible $d=0{,}005\:mm$.
+            \item Nitidez aceptable desde $2\:m$ hasta el infinito.
+        \end{itemize}
+
+        Tenemos como límite que:
+        \begin{equation}
+            \dfrac{H}{2} \leq 2\:m \quad\longrightarrow\quad H \leq 4\:m
+        \end{equation}
+
+        Reemplazando los datos en la Ecuación~\ref{eq:hiperfocal}:
+        \begin{equation}
+            H = \dfrac{{4\:mm}^2}{f \cdot 0{,}005\:mm}
+              = \dfrac{16\:mm^2}{f \cdot 0{,}005\:mm}
+              = \dfrac{16\:mm}{f \cdot 0{,}005}
+            \label{eq:reemplazo}
+        \end{equation}
+
+        Sabiendo que las aperturas disponibles son $f/1{,}4; f/2; f/2{,}8 \text{ y } f/4$ se varían los valores en la Ecuación~\ref{eq:reemplazo} y se compara el límite de $H\leq 4\:m$
+        \begingroup \setstretch{1.1}
+        \begin{longtblr}[
+            caption = {Comparación de aperturas.},
+            label = {tab:hiperfocal}
+            ]{
+                cells={ valign = m , halign = c }, 
+                colspec = {Q[3 cm]Q[3 cm]}, 
+                rowsep = 2 pt, 
+                colsep = 2.5 pt,           
+                hlines, vlines,                             
+                row{1}={bg=gray!15, font=\bfseries}
+            }
+
+                Apertura  & Hiperfocal \\
+                $f/1{,}4$ & $2{,}29 \:m$\\
+                $f/2$     & $1{,}6 \:m$\\
+                $f/2{,}8$ & $1{,}14 \:m$\\
+                $f/4$     & $0{,}8 \:m$\\
+
+        \end{longtblr}
+        \endgroup
+
+        Las cuatro aperturas cumplen, porque con una distancia focal de $4\:mm$ la hiperfocal es corta. Un número de apertura más chico deja entrar más luz, así que se elige $f/1{,}4$. A máxima apertura el lente suele dar menos nitidez que en aperturas intermedias, se acepta ese costo porque la consigna pide la mayor entrada de luz. Se enfoca a la distancia hiperfocal de $f/1{,}4$, es decir a unos $2{,}3\:m$. Así queda nítido todo desde $1{,}14\:m$ hasta el infinito, que cubre el rango pedido con incluso un margen.
+
+    \subsection{Cálculo del ISO}
+
+        Sabiendo que la configuración de referencia es $f/2$, $1/60\:seg$ e ISO $400$ se quiere pasar a $f/1{,}4$ y $1/250\:seg.$ y que cada paso de exposición es el doble o la mitad de luz tenemos que:
+
+        \begin{itemize}
+            \item De $f/2$ a $f/1{,}4$ entra el doble de luz, porque la luz depende del área del agujero.
+            \begin{equation*}
+                f/2 \rightarrow f/1{,}4 \quad\longrightarrow\quad +1 \text{ paso}
+            \end{equation*}
+            \item De $1/60\:seg$ a $1/250\:seg$ el sensor recibe luz durante un tiempo unas 4 veces menor.
+            \begin{equation*}
+                1/60 \rightarrow 1/125 \rightarrow 1/250 \quad\longrightarrow\quad -2 \text{ pasos}
+            \end{equation*}
+        \end{itemize}
+
+        En total falta 1 paso, que se compensa duplicando el ISO.
+        \begin{equation}
+            ISO = 400 \cdot \left(\frac{1{,}4}{2}\right)^2 \cdot \frac{250}{60} \approx 817 \quad \longrightarrow \quad ISO\ 800
+        \end{equation}
+
+        La configuración queda $f/1{,}4$, $1/250\:s$ e ISO $800$. Se acortó el tiempo para congelar el movimiento y se abrió el diafragma sin perder la profundidad de campo pedida. El costo es un poco más de ruido que con ISO $400$.
+
+    \subsection{Configuración del enfoque}
+
+        Sabiendo que hay tres opciones:
+        
+        \begin{itemize}
+            \item \textbf{Manual fijo:} Se ajusta una vez y no cambia.
+            \item \textbf{Autofoco simple:} La cámara enfoca una vez sobre lo que tenga delante.
+            \item \textbf{Autofoco continuo:} La cámara reenfoca cada vez que algo se mueve.
+        \end{itemize}
+        
+        Se elige el enfoque manual fijo a $2{,}3\:m$. Como la cámara vigila siempre el mismo sector y con ese foco ya está nítido todo desde $1{,}14\:m$ hasta el infinito, no hace falta reenfocar. Sabiendo que el autofoco necesita contraste para enfocar, puede que de noche al haber poco contraste se quede buscando el foco y en ese tiempo las imágenes salgan borrosas. También puede enfocar algo cercano, como una persona pegada a la cámara.
+
+    \subsection{Iluminación respecto al atardecer}
+
+        Sabiendo que de noche hay 3 pasos menos de luz y se tienen que recuperar se puede considerar que:
+
+        \begin{itemize}
+            \item La apertura ya está en f/1,4, la máxima disponible.
+            \item En el tiempo de exposición no se puede usar más de 1/250 s, porque las personas saldrían movidas.
+            \item Se puede modificar el ISO de 800 a 3200 ganando 2 pasos (800 → 1600 → 3200), y 3200 es el máximo.
+        \end{itemize}
+
+        Se recuperan 2 pasos de los 3 que se necesita, por lo que haría falta ISO aún más grande, que la cámara no tiene. Entonces no es posible mantener todas las condiciones con el equipo disponibl. Se propone como soluciones:
+
+        \begin{enumerate}[label=\textbf{\arabic*)}]
+            \item Agregar iluminación artificial, por ejemplo un reflector. Con duplicar la luz alcanza para usar ISO 3200, y con más luz se puede volver a ISO 800. Tiene un costo de instalación y de energía. Además, un reflector ilumina más lo cercano que lo lejano, y la escena puede superar el rango dinámico del sensor, quednado zonas quemadas cerca de la luz y zonas oscuras lejos de ella.
+            
+            \item Usar ISO 3200 y aflojar otra condición. Con 1/125 s la imagen queda bien iluminada, pero las personas que se mueven rápido saldrían movidas. Con 1/250 s la imagen queda un paso más oscura, y si después se aclara el ruido aumenta. En los dos casos ISO 3200 tiene más ruido que ISO 800.
+        \end{enumerate}
