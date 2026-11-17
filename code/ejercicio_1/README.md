@@ -1,0 +1,1 @@
+Poné todo lo que no quieras versionar en una carpeta llamada datos/

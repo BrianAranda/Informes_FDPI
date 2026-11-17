@@ -1,3 +1,87 @@
-\section{Título del ejercicio 3}
+\section{Optimización de parámetros}
 
-    Acá se desarrolla el ejercicio ...
+    \subsection{Subtitulo}
+
+        Desarrollar el ejercicio por subsecciones queda prolijo \dots
+
+    \subsection{Preguntas y análisis}
+
+        \subsubsection*{Sobre J-invariance}
+        \begin{itemize}[leftmargin=*]
+            \item \textbf{Explicar conceptualmente qué significa que un \textit{denoiser} sea J-invariante. ¿Por qué esta propiedad permite utilizar la \textit{self-supervised loss} como proxy de la \textit{groundtruth loss}?} 
+            
+                Desarrollar la respuesta acá \dots
+            
+            \item \textbf{¿Qué suposición crítica sobre el ruido es necesaria para que funcione el método de J-invariance?} 
+            
+                Desarrollar la respuesta acá \dots
+            
+            \item \textbf{En la práctica, ¿todos los tipos de ruido cumplen esta suposición? ¿Qué ocurriría con ruido correlacionado espacialmente?}
+            
+                Desarrollar la respuesta acá \dots
+
+        \end{itemize}
+        
+        \subsubsection*{Sobre la optimización}
+        \begin{itemize}[leftmargin=*]
+            \item \textbf{Comparar las curvas de \textit{self-supervised loss} vs. \textit{ground-truth loss}. ¿Efectivamente tienen la misma forma y el mismo mínimo? ¿Qué tan precisa es esta aproximación?} 
+            
+                Desarrollar la respuesta acá \dots
+            
+            \item \textbf{¿El método de J-invariance encuentra el mismo óptimo que la optimización con \textit{ground truth} de la Parte A? ¿Por qué es esto significativo?} 
+            
+                Desarrollar la respuesta acá \dots
+            
+            \item \textbf{¿Cuál es el costo computacional de la calibración mediante J-invariance comparado con probar parámetros manualmente? ¿Es factible en un pipeline de producción?} 
+            
+                Desarrollar la respuesta acá \dots
+
+        \end{itemize}
+
+        \subsubsection*{Sobre la generalización}
+        \begin{itemize}[leftmargin=*]
+            \item \textbf{Los parámetros óptimos encontrados para una imagen, ¿son transferibles a otras imágenes similares? Probar con múltiples imágenes del mismo dominio.}
+            
+                Desarrollar la respuesta acá \dots
+
+            \item \textbf{¿Sería posible pre-calibrar un denoiser para un tipo específico de imagen y luego aplicarlo sin recalibración a nuevas imágenes? ¿Qué factores determinarían la robustez de esta estrategia?}
+            
+                Desarrollar la respuesta acá \dots
+                
+        \end{itemize}
+
+        \subsubsection*{Sobre la selección de filtros}
+        \begin{itemize}[leftmargin=*]
+            \item \textbf{Al comparar diferentes familias de filtros ¿cuál resultó mejor para la imagen de prueba? ¿La \textit{self-supervised loss} es un criterio confiable para esta comparación?} 
+            
+                Desarrollar la respuesta acá \dots
+    
+            \item \textbf{¿Hay escenarios donde un tipo de filtro es claramente superior a otros según la naturaleza del ruido o la estructura de la imagen?}
+            
+                Desarrollar la respuesta acá \dots
+
+        \end{itemize}
+
+        \subsubsection*{Aplicabilidad práctica}
+        \begin{itemize}[leftmargin=*]
+            \item \textbf{Describir escenarios reales donde este método de calibración autosupervisada sería especialmente valioso y por qué.}
+            
+                Desarrollar la respuesta acá \dots
+            
+            \item \textbf{¿Qué limitaciones prácticas enfrenta este método?}
+            
+                Desarrollar la respuesta acá \dots
+
+            \item \textbf{Para pipelines de ingeniería:}
+            \begin{itemize}[leftmargin=*]
+                \item \textbf{En un sistema de producción, ¿preferirías calibrar en línea (para cada imagen) o calibrar offline (una vez por tipo de imagen) y reutilizar parámetros? Justificar según el \textit{trade-off} entre calidad y velocidad.}
+
+                    Desarrollar la respuesta acá \dots
+
+                \item \textbf{¿Las métricas cuantitativas pueden reemplazar completamente la evaluación visual humana en el proceso de validación de un pipeline de \textit{denoising}? ¿En qué contextos sí y en cuáles no? }
+
+                    Desarrollar la respuesta acá \dots
+
+            \end{itemize}
+
+        \end{itemize}
