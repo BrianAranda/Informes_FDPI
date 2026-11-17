@@ -4,7 +4,7 @@
   a4paper,
   inner=2.5cm,
   outer=2cm,
-  top=4cm,
+  top=3cm,
   bottom=2.3cm,
   headheight=2cm,
   headsep=0.5cm,
@@ -14,12 +14,21 @@
 % Espaciado general del texto
 \setstretch{1.5}
 
+% No estirar espacios verticales para igualar el final de cada página
+\raggedbottom
+
 % Eliminar espaciado de enumerate e itemize
 \setlist[enumerate,itemize]{itemsep=0pt, topsep=0pt}
 
-% Para que todos los Figura xx y Tabla xx aparezcan en negrita
+% Para que todos los Figura xx aparezcan en negrita
 \captionsetup[figure]{labelfont=bf}
-\captionsetup[table]{labelfont=bf}
+
+% Para que todos los Tabla xx aparezcan en negrita
+\DefTblrTemplate{caption-tag}{default}{\bfseries Tabla\hspace{0.25em}\thetable}
+\DefTblrTemplate{caption-sep}{default}{\bfseries :\enskip}
+
+% Espacio arriba y abajo de figuras y tablas con [H]
+\setlength{\intextsep}{0.1cm plus 0.1cm}
 
 % Estilo para páginas de título (como \maketitle)
 \fancypagestyle{plain}{
@@ -66,7 +75,7 @@
     {\thechapter.}              % número con punto
     {0.25 cm}
     {\MakeUppercase}
-    \titlespacing*{\chapter}{0 pt}{-45 pt}{15 pt} % {izq}{antes}{después}
+    \titlespacing*{\chapter}{0 pt}{-30 pt}{5 pt} % {izq}{antes}{después}
 
 % Redefinición del formato de \section
 \titleformat{\section}[block]
@@ -75,6 +84,7 @@
     {0 cm}
     {\MakeUppercase}
     [\vspace{0.5ex}\titlerule]
+    \titlespacing{\section}{0pt}{0.3 cm}{0.25 cm}
 
 % Redefinición del formato de \subsection
 \titleformat{\subsection}
@@ -82,6 +92,7 @@
     {}                              % Elimina el número
     {0 pt}                          % Sangría
     {}                              % Código adicional (opcional)
+    \titlespacing{\subsection}{0pt}{0.2 cm}{0.25 cm}
 
 % Redefinición del formato de \subsubsection
 \titleformat{\subsubsection}
@@ -89,6 +100,7 @@
     {}                                  % Elimina el número
     {0 pt}                              % Sangría
     {}                                  % Código adicional (opcional)
+    \titlespacing{\subsubsection}{0pt}{0.2 cm}{0.25 cm}
 
 % Elimina la numeración del indice
 
