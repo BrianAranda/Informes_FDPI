@@ -2,7 +2,7 @@
 
     El filtro gaussiano reduce el ruido promediando cada píxel con sus vecinos según la distancia, sin distinguir si esos vecinos pertenecen al mismo objeto, por lo que también suaviza los bordes. El filtro bilateral agrega un segundo peso que depende de la diferencia de intensidad, de modo que sólo promedia vecinos cercanos \textbf{y} parecidos. El objetivo de esta actividad es comparar el desempeño de ambos filtros analizándolos sobre una imagen limpia la cual fue contaminada con ruido gaussiano moderado ($\sigma \approx 20$--$25$), para esto se variaron los parámetros de manera visual y cuantitativamente, en regiones de borde y  homogéneas, eligiendo la configuración más adecuada priorizando las métricas SSIM y PSNR.
 
-    Se usó una fotografía de una disquería tomada con un celular, de $6120\times6120$ píxeles en color. La escena combina zonas homogéneas (la pared), bordes muy marcados (las guitarras colgadas contra la pared) y detalle fino (lomos de discos y estanterías). Se redujo a $1024\times1024$ con interpolación por área (\texttt{INTER\_AREA}), que promedia bloques de unos $6\times6$ píxeles. Esto atenúa el ruido propio del sensor, tomado con poca luz, deja una referencia limpia (\textit{ground truth}) y vuelve viable el barrido de parámetros, ya que el bilateral sobre 37 megapíxeles tarda segundos por configuración. Todo se implementó en Python con OpenCV y scikit-image \cite{ej2:opencv, ej2:skimage}.
+    Se usó una fotografía de una disquería tomada con un celular, de $6120\times6120$ píxeles en color. La escena combina zonas homogéneas (la pared), bordes muy marcados (las guitarras colgadas contra la pared) y detalle fino (lomos de discos y estanterías). Se redujo a $1024\times1024$ con interpolación por área (\texttt{INTER\_AREA}), que promedia bloques de unos $6\times6$ píxeles. Esto atenúa el ruido propio del sensor, tomado con poca luz, deja una referencia limpia (\textit{ground truth}) y vuelve viable el barrido de parámetros, ya que el bilateral sobre 37 megapíxeles tarda segundos por configuración. Todo se implementó en Python con OpenCV y scikit-image.
 
     \subsection{Imagen de referencia y contaminación}
 
@@ -30,7 +30,7 @@
             \qquad W_p = \sum_{q} G_{\sigma_{esp}}\, G_{\sigma_{rango}} .
         \end{equation*}
 
-        Se probó el gaussiano con $\sigma_{esp} \in \{2, 4, 6\}$ y el bilateral con todas las combinaciones de $\sigma_{esp} \in \{2, 4, 6\}$ y $\sigma_{rango} \in \{20, 50, 100\}$: doce configuraciones en total. OpenCV fija la ventana del gaussiano en $6\sigma+1$ píxeles (13, 25 y 37). La del bilateral (con \texttt{d=0}) la deriva de un radio de $1{,}5\,\sigma_{esp}$ (7, 13 y 19). En imágenes a color, OpenCV mide la diferencia de rango como la \textbf{suma de las diferencias absolutas de los tres canales} \cite{ej2:opencv}, lo que condiciona la escala de $\sigma_{rango}$.
+        Se probó el gaussiano con $\sigma_{esp} \in \{2, 4, 6\}$ y el bilateral con todas las combinaciones de $\sigma_{esp} \in \{2, 4, 6\}$ y $\sigma_{rango} \in \{20, 50, 100\}$, dando doce configuraciones en total. OpenCV fija la ventana del gaussiano en $6\sigma+1$ píxeles (13, 25 y 37 para nuestro caso). La del bilateral (con \texttt{d=0}) la obtiene de un radio de $1{,}5\,\sigma_{esp}$ (7, 13 y 19). En imágenes a color, OpenCV mide la diferencia de rango como la \textbf{suma de las diferencias absolutas de los tres canales} \cite{ej2:opencv}, lo que condiciona la escala de $\sigma_{rango}$.
 
         Cada resultado se comparó con la referencia mediante las métricas de la \textbf{Tabla \ref{tab:ej2_metricas}}, sobre los tres canales y con rango dinámico fijo de 255. El tiempo se midió con 7 repeticiones de 3 ejecuciones y se reporta la mediana, robusta ante interrupciones del sistema.
 
@@ -57,7 +57,7 @@
             \item \textbf{Con $\sigma_{rango}=20$ el bilateral casi no filtra}: el SSIM apenas pasa de 0,302 a un rango de 0,326 a 0,357. Con $\sigma=25$ por canal, dos vecinos de una misma zona difieren en promedio unos 85 niveles en la suma de los tres canales, muy por encima de 20.
             \item \textbf{Con $\sigma_{rango}=100$ el bilateral supera a todos los gaussianos} en ambas métricas. La configuración $(4, 100)$ logra un SSIM de 0,814 y un PSNR de 29,84 dB, contra 0,769 y 26,30 dB del mejor gaussiano ($\sigma=2$).
             \item \textbf{El gaussiano empeora al aumentar $\sigma$}: con $\sigma=6$ el PSNR cae a 22,70 dB. A esa escala, el error por borronear los bordes supera lo que se gana al quitar ruido.
-            \item \textbf{PSNR y SSIM no eligen lo mismo}: $(2, 100)$ tiene el menor MSE y el mayor PSNR (29,92 dB), pero conserva grano visible y su SSIM baja a 0,761. Priorizar el SSIM selecciona $(4, 100)$.
+            \item \textbf{PSNR y SSIM no eligen lo mismo}: $(2, 100)$ tiene el menor MSE y el mayor PSNR (29,92 dB), pero conserva grano visible y su SSIM baja a 0,761. Priorizar el SSIM implica aumentar el $\sigma_{rango}$ tal que quede en: $(4, 100)$.
         \end{itemize}
 
         \begin{table}[H] \centering \setstretch{1.05} \captionsetup{labelfont=bf}
