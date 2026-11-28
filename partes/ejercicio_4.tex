@@ -1,38 +1,185 @@
 \section{Filtros morfológicos}
 
-    \subsection{Subtitulo}
+    Los filtros morfológicos (erosión, dilatación, apertura y cierre) permiten post-procesar máscaras binarias: Eliminar ruido, rellenar huecos, conectar componentes o separar objetos, según el tamaño y la forma del elemento estructurante (EE). En esta actividad se segmentaron \textbf{galaxias}, cientos de objetos de una misma clase, brillantes sobre un fondo oscuro con ruido, y se refinó la máscara con apertura y cierre.
 
-        Desarrollar el ejercicio por subsecciones queda prolijo \dots
+    La imagen principal es el \textbf{Hubble eXtreme Deep Field} (XDF, 2012, $872 \times 1000$ píxeles) \cite{ej4:xdf}, incluida en scikit-image \cite{ej2:skimage}. Para probar la robustez se usaron recortes de $1000 \times 1000$ píxeles de dos imágenes reales de otros instrumentos:
+
+    \begin{itemize}[label=\textbullet]
+        \item \textbf{Hubble Ultra Deep Field} (HUDF, 2004, cámara ACS) \cite{ej4:hudf}: El mismo campo del cielo que el XDF, con menos exposición.
+        \item \textbf{Primer campo profundo de Webb} (SMACS 0723, 2022, NIRCam) \cite{ej4:webb}: Otro telescopio y otro procesamiento de color, con un cúmulo de galaxias que agrega luz difusa al fondo.
+    \end{itemize}
+
+    El pipeline final es: \textbf{canal $\bm{V}$ (HSV)} $\rightarrow$ \textbf{umbral mediana $\bm{+ 3\sigma}$} $\rightarrow$ \textbf{apertura con disco $\bm{r=1}$} $\rightarrow$ \textbf{cierre con disco $\bm{r=1}$}.
+
+    \begin{figure}[H] \centering
+        \includegraphics[width=0.85\linewidth]{img/ejercicio_4/original.png}
+        \caption{Hubble eXtreme Deep Field y zona de detalle que se usa en las figuras siguientes.}
+        \label{fig:ej4_original}
+    \end{figure}
+
+    \subsection{Segmentación}
+
+        Las galaxias tienen colores muy distintos (rojas, azules, blancas): Lo que las separa del fondo es el \textbf{brillo}, no el tono. $H$ y $S$ no sirven, porque en un píxel casi negro quedan dominados por el ruido de compresión. Se compararon $L^*$ (LAB) y $V$ (HSV, el máximo de R, G y B). El fondo se estimó con la mediana y el ruido $\sigma$ con la MAD (desviación absoluta mediana $\times 1{,}4826$), que no se dejan arrastrar por las galaxias.
+
+        Ninguno de los dos canales penaliza a las galaxias de algún color: La SNR (\textit{Signal-to-Noise Ratio} o relación señal a ruido) mediana de los picos es de $38$ a $40$ en $V$ y de $41$ a $46$ en $L^*$. La diferencia está en el ruido: Con el mismo criterio, $L^*$ detecta un $4\ \%$ más de objetos grandes (407 contra 392) pero un $44\ \%$ más de motas (4448 contra 3090). Se eligió $V$, aunque con $L^*$ el pipeline también funcionaría.
+
+        El histograma de $V$ no es bimodal (\textbf{Figura \ref{fig:ej4_umbral}}): Más del $90\ \%$ de los píxeles son fondo. Otsu ubica el umbral en $0{,}346$ y solo detecta los núcleos de las galaxias brillantes (202 objetos de 30 píxeles o más). Se usó el criterio habitual en astronomía, $V > \text{mediana} + 3\sigma = 0{,}129$, que detecta 392. Con ese criterio entran las galaxias tenues, a cambio de dejar ruido que después limpia la morfología.
+
+        \begin{figure}[H] \centering
+            \includegraphics[width=\linewidth]{img/ejercicio_4/umbral.png}
+            \caption{Histograma de $V$ (escala logarítmica) y máscaras de la zona de detalle con cada umbral.}
+            \label{fig:ej4_umbral}
+        \end{figure}
+
+    \subsection{Máscara inicial y criterio de evaluación}
+
+        La máscara inicial tiene 5379 componentes y 134 huecos: Miles de \textbf{motas de ruido}, huecos en las galaxias tenues, bordes irregulares y galaxias vecinas en contacto. Como no hay \textit{ground truth}, se definieron dos grupos de referencia con criterios que no dependen de la morfología (\textbf{Figura \ref{fig:ej4_inicial}}):
+
+        \begin{itemize}[label=\textbullet]
+            \item \textbf{Galaxias de referencia} (392, en verde): Pico $\geq 10\sigma$ y área $\geq 30$ píxeles. Son objetos reales sin ambigüedad.
+            \item \textbf{Motas de ruido} (2108, en rojo): Pico $< 5\sigma$ y área $\leq 10$ píxeles.
+            \item Las 2879 componentes intermedias (en gris) no se usan para evaluar.
+        \end{itemize}
+
+        \begin{figure}[H] \centering
+            \includegraphics[width=0.88\linewidth]{img/ejercicio_4/mascara_inicial.png}
+            \caption{Máscara inicial, grupos de referencia en la zona de detalle y tamaño de cada grupo.}
+            \label{fig:ej4_inicial}
+        \end{figure}
+
+        Los tamaños de los dos grupos están bien separados: Las motas miden de 1 a 8 píxeles y las galaxias de referencia desde 30 píxeles (unos 6 píxeles de diámetro). Cada operación se evalúa con cuatro métricas: \textbf{Ruido eliminado} (motas de las que no queda ningún píxel), \textbf{galaxias conservadas} (galaxias cuyo píxel más brillante sigue en la máscara), \textbf{área de galaxias conservada} (mide la erosión de los bordes) y \textbf{galaxias fusionadas} (galaxias que comparten componente con otra).
+
+    \subsection{Apertura y cierre}
+
+        La apertura $A \circ B = (A \ominus B) \oplus B$ elimina todo lo que no puede contener al EE; el cierre $A \bullet B = (A \oplus B) \ominus B$ rellena huecos y une objetos separados por menos que el EE. Se probaron los EE pedidos: Cuadrado $3 \times 3$ y $5 \times 5$, disco de radio 1 y 2, y cruz $3 \times 3$ y $5 \times 5$. El disco de radio 1 y la cruz $3 \times 3$ son el mismo EE. La \textbf{Figura \ref{fig:ej4_apertura}} muestra en rojo lo que quita cada apertura y la \textbf{Tabla \ref{tab:ej4_ap_ci}} resume las métricas.
+
+        \begin{table}[H] \centering \setstretch{1.05} \captionsetup{labelfont=bf}
+            \begin{tblr}{
+                width = \linewidth, cells={ valign = m , halign = c }, colspec = {X[1.5]X[1]X[1]X[1]X[1]X[0.8]}, rowsep = 1 pt, colsep = 4 pt, hlines, vlines,
+                row{1,2}={bg=gray!15, font=\bfseries} }
+                \SetCell[r=2]{c} EE & \SetCell[c=3]{c} Apertura & & & \SetCell[c=2]{c} Cierre & \\
+                 & Ruido eliminado [\%] & Galaxias conservadas [\%] & Área de galaxias [\%] & Galaxias fusionadas & Huecos \\
+                (inicial) & 0 & 100 & 100 & 0 & 134 \\
+                Cuadrado $3 \times 3$ & 100 & $98{,}0$ & $92{,}3$ & 47 & 10 \\
+                Cuadrado $5 \times 5$ & 100 & $65{,}6$ & $78{,}3$ & 93 & 5 \\
+                Disco $r=1$ / cruz $3 \times 3$ & $99{,}9$ & $99{,}7$ & $95{,}1$ & 37 & 9 \\
+                Disco $r=2$ ($5 \times 5$) & 100 & $93{,}1$ & $87{,}6$ & 59 & 8 \\
+                Cruz $5 \times 5$ & 100 & $91{,}8$ & $87{,}6$ & 47 & 6 \\
+            \end{tblr}
+            \caption{Métricas de la apertura y del cierre con cada EE. La apertura no fusiona y el cierre no elimina ruido ni pierde galaxias.}
+            \label{tab:ej4_ap_ci}
+        \end{table}
+
+        Todas las aperturas eliminan prácticamente todo el ruido, porque las motas son chicas; lo que las diferencia es cuántas galaxias se llevan por delante. El cierre rellena casi todos los huecos ya con el EE más chico, pero \textbf{fusiona galaxias vecinas}. El barrido del radio del disco (\textbf{Figura \ref{fig:ej4_barrido}}) muestra que el margen es angosto. Con radio 1 la apertura ya elimina el $99{,}9\ \%$ del ruido; con radio 2 pierde el $7\ \%$ de las galaxias y con radio 3 casi la mitad. En el cierre, las fusiones pasan de 37 con radio 1 a 261 con radio 6.
+
+        \begin{figure}[H] \centering
+            \includegraphics[width=0.8\linewidth]{img/ejercicio_4/apertura.png}
+            \caption{Apertura con cada EE en la zona de detalle. Rojo: Píxeles quitados.}
+            \label{fig:ej4_apertura}
+        \end{figure}
+
+        \begin{figure}[H] \centering
+            \includegraphics[width=0.78\linewidth]{img/ejercicio_4/barrido_tamanio.png}
+            \caption{Métricas de la apertura y del cierre en función del radio del disco.}
+            \label{fig:ej4_barrido}
+        \end{figure}
+
+    \subsection{Forma del elemento estructurante}
+
+        A igual ventana ($5 \times 5$: 25, 13 y 9 píxeles), el \textbf{cuadrado} es el más agresivo: En diagonal mide $\sqrt{2}$ veces más que de lado y deja bordes escalonados. El \textbf{disco} es isótropo y deja contornos redondeados, coherentes con la forma de las galaxias. La \textbf{cruz} deja contornos dentados y ``estampa'' su forma en los objetos chicos, porque la apertura reconstruye cada objeto como unión de copias del EE.
+
+        Hay un caso real donde la forma es decisiva: Las estrellas de Webb tienen \textbf{picos de difracción} a $90\degree$, $30\degree$ y $150\degree$, que en la máscara parecen objetos lineales (\textbf{Figura \ref{fig:ej4_picos}}). Una apertura con \textbf{disco de radio 4} los elimina, porque son finos, pero también se lleva las galaxias chicas. Una apertura con \textbf{segmentos} de 31 píxeles orientados según los picos hace lo contrario: Conserva los picos y elimina las galaxias compactas. Combinando EE de distinta forma se separan estructuras por su geometría, no solo por su tamaño.
+
+        \begin{figure}[H] \centering
+            \includegraphics[width=\linewidth]{img/ejercicio_4/picos_difraccion.png}
+            \caption{Estrella con picos de difracción en Webb: Apertura con disco y con segmentos orientados a $90\degree$, $30\degree$ y $150\degree$.}
+            \label{fig:ej4_picos}
+        \end{figure}
+
+    \subsection{Encadenado y máscara final}
+
+        Con el radio útil de 1 se compararon los dos órdenes (\textbf{Figura \ref{fig:ej4_encadenado}} y \textbf{Tabla \ref{tab:ej4_encadenado}}).
+
+        \begin{table}[H] \centering \setstretch{1.05} \captionsetup{labelfont=bf}
+            \begin{tblr}{
+                width = \linewidth, cells={ valign = m , halign = c }, colspec = {X[1.6]X[1]X[1]X[1]X[1]X[0.7]}, rowsep = 1 pt, colsep = 4 pt, hlines, vlines,
+                row{1}={bg=gray!15, font=\bfseries} }
+                Máscara ($r=1$) & Ruido eliminado [\%] & Galaxias conservadas [\%] & Área de galaxias [\%] & Galaxias fusionadas & Huecos \\
+                Apertura & $99{,}9$ & $99{,}7$ & $95{,}1$ & 0 & 41 \\
+                Cierre & 0 & 100 & 100 & 37 & 9 \\
+                \SetCell{bg=green!10} Apertura $\rightarrow$ cierre & \SetCell{bg=green!10} $99{,}9$ & \SetCell{bg=green!10} $99{,}7$ & \SetCell{bg=green!10} $95{,}2$ & \SetCell{bg=green!10} 8 & \SetCell{bg=green!10} 1 \\
+                Cierre $\rightarrow$ apertura & $97{,}2$ & $99{,}7$ & $97{,}6$ & 30 & 3 \\
+            \end{tblr}
+            \caption{Operaciones simples y encadenadas con disco de radio 1.}
+            \label{tab:ej4_encadenado}
+        \end{table}
+
+        Se eligió \textbf{apertura $\bm{\rightarrow}$ cierre}: Elimina las motas mientras todavía están aisladas y después rellena. El orden inverso primero une motas entre sí y con las galaxias. Esas motas agrandadas ya no las elimina la apertura de radio 1, y las galaxias fusionadas siguen unidas (30 contra 8). Al final se agregó un filtrado por área opcional (objetos de menos de 10 píxeles), que elimina los restos sin tocar los bordes. La máscara final tiene \textbf{891 objetos}: Conserva el $99{,}5\ \%$ de las galaxias de referencia y el $95\ \%$ de su área, elimina todo el ruido y deja un solo hueco. Quedan 8 galaxias fusionadas con una vecina (\textbf{Figura \ref{fig:ej4_final}}).
+
+        \begin{figure}[H] \centering
+            \includegraphics[width=0.8\linewidth]{img/ejercicio_4/encadenado.png}
+            \caption{Máscara inicial, tras apertura, tras cierre, tras los dos órdenes posibles y final con filtrado por área (zona de detalle).}
+            \label{fig:ej4_encadenado}
+        \end{figure}
+
+        \begin{figure}[H] \centering
+            \includegraphics[width=\linewidth]{img/ejercicio_4/superposicion.png}
+            \caption{Máscara inicial, máscara final y máscara final con filtrado por área, superpuestas a la zona de detalle.}
+            \label{fig:ej4_final}
+        \end{figure}
+
+    \subsection{Robustez con otras imágenes}
+
+        Se aplicó la misma morfología a las tres imágenes con tres umbrales distintos (\textbf{Figura \ref{fig:ej4_robustez}}):
+
+        \begin{itemize}[label=\textbullet]
+            \item \textbf{A:} El umbral fijo calibrado en el XDF ($V > 0{,}129$).
+            \item \textbf{B:} Mediana $+ 3\sigma$ medidos en cada imagen.
+            \item \textbf{C:} Lo mismo que B, pero antes se resta el fondo con un \textbf{top-hat blanco} $V - (V \circ B)$ con un disco de radio 15. La apertura en grises con un disco grande estima el fondo, y al restarla quedan solo las estructuras más chicas que el disco.
+        \end{itemize}
+
+        \begin{itemize}[label=\textbullet]
+            \item \textbf{El umbral fijo no es transferible.} En el HUDF el ruido es tres veces mayor ($\sigma = 0{,}070$ contra $0{,}023$) y la máscara se llena de ruido (6176 objetos). En Webb el fondo del cúmulo ya supera el umbral y se marca el $95\ \%$ de la imagen.
+            \item \textbf{El umbral adaptativo resuelve el ruido distinto.} En el HUDF detecta menos galaxias que en el XDF (68 contra 362 de 30 píxeles o más), lo esperable con menos exposición. En Webb no alcanza: La luz difusa del cúmulo queda como un objeto que ocupa el $4\ \%$ de la imagen.
+            \item \textbf{El top-hat elimina el fondo no uniforme} y en Webb da 111 objetos de 30 píxeles o más, contra 42 del umbral adaptativo solo. Tiene un costo: Borra todo lo que es más ancho que su disco, incluida la galaxia elíptica central del cúmulo. Además, los picos de difracción siguen apareciendo como objetos.
+            \item \textbf{La morfología de radio 1 funcionó en las tres imágenes,} porque tienen escalas de píxel parecidas. Lo frágil fue el umbral.
+        \end{itemize}
+
+        \begin{figure}[H] \centering
+            \includegraphics[width=0.92\linewidth]{img/ejercicio_4/robustez.png}
+            \caption{Máscara final con cada umbral (columnas) en cada imagen (filas), con la fracción de primer plano y la cantidad de objetos de 30 píxeles o más.}
+            \label{fig:ej4_robustez}
+        \end{figure}
 
     \subsection{Preguntas y análisis}
 
         \begin{itemize}[leftmargin=*]
-            \item \textbf{¿Qué efecto tuvo la apertura morfológica sobre la máscara? ¿Se eliminó el ruido externo? ¿Se afectaron los bordes de los objetos de interés? }
-            
-                Desarrollar la respuesta acá \dots
+            \item \textbf{¿Qué efecto tuvo la apertura morfológica sobre la máscara? ¿Se eliminó el ruido externo? ¿Se afectaron los bordes de los objetos de interés?}
 
-            \item \textbf{¿Qué efecto tuvo el cierre morfológico? ¿Se rellenaron los huecos internos? ¿Se unieron objetos que estaban separados?} 
-            
-                Desarrollar la respuesta acá \dots
+                Con disco de radio 1 eliminó el $99{,}9\ \%$ del ruido externo y conservó el $99{,}7\ \%$ de las galaxias. Afectó poco los bordes: Se perdió el $5\ \%$ del área de las galaxias, que corresponde a sus bordes tenues. La apertura no distingue ruido de objeto, solo tamaño: Con radio 3 desaparece casi la mitad de las galaxias.
 
-            \item \textbf{¿Cómo afecta el tamaño del elemento estructurante a los resultados? ¿Existe un tamaño óptimo según el tamaño de los objetos y del ruido? }
-            
-                Desarrollar la respuesta acá \dots
+            \item \textbf{¿Qué efecto tuvo el cierre morfológico? ¿Se rellenaron los huecos internos? ¿Se unieron objetos que estaban separados?}
 
-            \item \textbf{¿La forma del elemento estructurante (cuadrado vs. disco vs. cruz) produce diferencias notables? ¿En qué contextos podría ser relevante?} 
-            
-                Desarrollar la respuesta acá \dots
+                Rellenó los huecos (de 134 a 9) y suavizó los contornos, pero \textbf{sí unió objetos separados}: 37 galaxias quedaron fusionadas con una vecina con radio 1, y 261 con radio 6.
 
-            \item \textbf{Probar la robustez del pipeline completo (segmentación + morfología) con otras imágenes de la misma clase, pero capturadas bajo condiciones diferentes (iluminación distinta, cámara diferente, fondo variable). ¿Los mismos parámetros siguen funcionando bien? ¿Qué ajustes serían necesarios?} 
-            
-                Desarrollar la respuesta acá \dots
+            \item \textbf{¿Cómo afecta el tamaño del elemento estructurante a los resultados? ¿Existe un tamaño óptimo según el tamaño de los objetos y del ruido?}
 
-            \item \textbf{¿Es suficiente aplicar solo apertura o solo cierre, o es necesario encadenar ambas operaciones? ¿En qué orden? Justificar según el tipo de ruido presente.} 
-            
-                Desarrollar la respuesta acá \dots
+                El tamaño fija el objeto más chico que sobrevive a la apertura y la distancia que puentea el cierre. El óptimo se deduce de los tamaños medidos: El EE debe ser mayor que el ruido (1 a 8 píxeles) y menor que el objeto más chico a detectar (unos 6 píxeles de diámetro). Aquí el margen es angosto y el óptimo es radio 1. En un campo profundo, la apertura define el tamaño mínimo detectable.
 
-            \item \textbf{En un escenario de inspección industrial automatizada, ¿cuán crítica es la selección de estos parámetros morfológicos para garantizar una detección confiable de defectos o conteo de objetos?} 
-            
-                Desarrollar la respuesta acá \dots
-                
+            \item \textbf{¿La forma del elemento estructurante (cuadrado vs. disco vs. cruz) produce diferencias notables? ¿En qué contextos podría ser relevante?}
+
+                Sí. A igual ventana, el cuadrado es mucho más agresivo (en $5 \times 5$ la apertura pierde el $34\ \%$ de las galaxias, cinco veces más que el disco) y la cruz deja contornos dentados. El disco es el adecuado para objetos sin orientación, como las galaxias. La forma es decisiva con estructuras de geometría conocida: Picos de difracción, rayas o fisuras (EE lineales orientados), o piezas rectangulares alineadas con la imagen (cuadrado).
+
+            \item \textbf{Probar la robustez del pipeline completo (segmentación + morfología) con otras imágenes de la misma clase, pero capturadas bajo condiciones diferentes (iluminación distinta, cámara diferente, fondo variable). ¿Los mismos parámetros siguen funcionando bien? ¿Qué ajustes serían necesarios?}
+
+                La morfología sí, mientras la escala de píxel sea parecida; el umbral fijo no. Los ajustes necesarios son: Umbral adaptativo, sustracción de fondo cuando no es uniforme (con un radio mayor que los objetos a conservar), radios del EE definidos en unidades físicas y escalados con la resolución, y un tratamiento de los artefactos de cada instrumento.
+
+            \item \textbf{¿Es suficiente aplicar solo apertura o solo cierre, o es necesario encadenar ambas operaciones? ¿En qué orden? Justificar según el tipo de ruido presente.}
+
+                Hay que encadenarlas: La apertura sola deja 41 huecos y el cierre solo deja todo el ruido. Aquí el ruido externo domina (2108 motas contra 134 huecos), así que conviene apertura $\rightarrow$ cierre. El orden inverso deja más ruido y casi cuadruplica las fusiones. Cierre $\rightarrow$ apertura convendría si el problema principal fueran huecos grandes dentro de los objetos.
+
+            \item \textbf{En un escenario de inspección industrial automatizada, ¿cuán crítica es la selección de estos parámetros morfológicos para garantizar una detección confiable de defectos o conteo de objetos?}
+
+                Muy crítica. En esta imagen, un píxel de radio cambia el conteo: El $7\ \%$ de galaxias perdidas en la apertura, o 22 fusiones más en el cierre. Un defecto chico es, para la morfología, lo mismo que ruido: Si el EE supera el defecto mínimo especificado, la pieza defectuosa pasa la inspección. Los parámetros deben definirse en unidades físicas, validarse con imágenes etiquetadas y recalibrarse si cambia la cámara o la óptica.
+
         \end{itemize}
